@@ -7,7 +7,7 @@ namespace GenomeAssemblyApp.Controllers
     {
         public IActionResult Login()
         {
-            return View("~/Views/Login.cshtml");
+            return View("/Login.cshtml");
         }
 
         [HttpPost]
@@ -15,12 +15,12 @@ namespace GenomeAssemblyApp.Controllers
         {
             // In a real application, you would validate credentials against a database
             // For this prototype, we'll just redirect to the home page
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction("MyProjects", "Home");
         }
 
         public IActionResult Register()
         {
-            return View("~/Views/Register.cshtml");
+            return RedirectToPage("/Register");
         }
 
         [HttpPost]
@@ -28,13 +28,13 @@ namespace GenomeAssemblyApp.Controllers
         {
             // In a real application, you would validate and store the user
             // For this prototype, we'll just redirect to the login page
-            return RedirectToAction("Login");
+            return RedirectToPage("/Login");
         }
 
         public IActionResult Logout()
         {
             // For this prototype, just redirect to home
-            return RedirectToAction("Index", "Home");
+            return RedirectToPage("/Index");
         }
     }
 }

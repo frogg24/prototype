@@ -8,5 +8,10 @@ namespace Web_prototype.Pages
         public void OnGet()
         {
         }
+
+        public IActionResult OnPost(string email, string password)
+        {
+            return RedirectToPage("/MyProjects");
+        }
     }
 }

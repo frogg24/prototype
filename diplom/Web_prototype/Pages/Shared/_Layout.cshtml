@@ -10,22 +10,22 @@
     <header>
         <nav class="navbar">
             <div class="container">
-                <a class="navbar-brand" href="/">Genome Assembly App</a>
+                <a class="navbar-brand" href="/">Сборка генома</a>
                 <div>
                     @if (Context.Request.Path.Value.Contains("Home") || Context.Request.Path.Value == "/")
                     {
-                        <a class="nav-link" href="/Login">Login</a>
-                        <a class="nav-link" href="/Register">Register</a>
+                        <a class="nav-link" href="/Login">Войти</a>
+                        <a class="nav-link" href="/Register">Регистрация</a>
                     }
                     else if (Context.Request.Path.Value.Contains("Account"))
                     {
-                        <a class="nav-link" href="/Index">Home</a>
+                        <a class="nav-link" href="/Index">Главная</a>
                     }
                     else
                     {
-                        <a class="nav-link" href="/Index">Home</a>
-                        <a class="nav-link" href="/MyProjects">My Projects</a>
-                        <a class="nav-link" href="/Logout">Logout</a>
+                        <a class="nav-link" href="/Index">Главная</a>
+                        <a class="nav-link" href="/MyProjects">Мои сборки</a>
+                        <a class="nav-link" href="/Logout">Выйти</a>
                     }
                 </div>
             </div>
@@ -36,11 +36,6 @@
             @RenderBody()
         </main>
     </div>
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2023 - Genome Assembly App
-        </div>
-    </footer>
     <script src="/js/site.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
