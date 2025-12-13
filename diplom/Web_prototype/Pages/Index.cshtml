@@ -1,0 +1,55 @@
+﻿@page
+@{
+    ViewData["Title"] = "Upload Reads";
+    Layout = "_Layout";
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3>Upload Reads for Assembly</h3>
+            </div>
+            <div class="card-body">
+                <p>Upload one or more .ab1 files (Sanger sequencing reads) to perform genome assembly.</p>
+
+                <form id="uploadForm" method="post" action="/Upload" enctype="multipart/form-data" onsubmit="return simulateUploadAndProcess();">
+                    <div class="form-group">
+                        <label for="fileInput">Select .ab1 files:</label>
+                        <input type="file" class="form-control" id="fileInput" name="files" multiple accept=".ab1" required />
+                        <small class="form-text text-muted">You can select multiple .ab1 files for assembly.</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Upload and Start Assembly</button>
+                </form>
+
+                <!-- Progress bar (initially hidden) -->
+                <div class="mt-3" style="display:none;" id="progressContainer">
+                    <div class="progress" style="height: 20px;">
+                        <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%; background-color: #007bff;">0%</div>
+                    </div>
+                    <p class="mt-1">Processing files...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h4>About Sanger Sequencing</h4>
+            </div>
+            <div class="card-body">
+                <p>Sanger sequencing, also known as chain termination method, is a method of DNA sequencing based upon the selective incorporation of chain-terminating dideoxynucleotides.</p>
+                <p>This application helps assemble multiple Sanger sequencing reads (.ab1 files) into a consensus sequence.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            simulateUploadAndProcess();
+        });
+    </script>
+}

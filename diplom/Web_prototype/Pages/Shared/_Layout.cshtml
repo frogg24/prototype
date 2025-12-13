@@ -1,0 +1,47 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Genome Assembly App</title>
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="container">
+                <a class="navbar-brand" href="/">Genome Assembly App</a>
+                <div>
+                    @if (Context.Request.Path.Value.Contains("Home") || Context.Request.Path.Value == "/")
+                    {
+                        <a class="nav-link" href="/Login">Login</a>
+                        <a class="nav-link" href="/Register">Register</a>
+                    }
+                    else if (Context.Request.Path.Value.Contains("Account"))
+                    {
+                        <a class="nav-link" href="/Index">Home</a>
+                    }
+                    else
+                    {
+                        <a class="nav-link" href="/Index">Home</a>
+                        <a class="nav-link" href="/MyProjects">My Projects</a>
+                        <a class="nav-link" href="/Logout">Logout</a>
+                    }
+                </div>
+            </div>
+        </nav>
+    </header>
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2023 - Genome Assembly App
+        </div>
+    </footer>
+    <script src="/js/site.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

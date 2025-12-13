@@ -1,0 +1,70 @@
+﻿@page
+@{
+    ViewData["Title"] = "My Projects";
+    Layout = "_Layout";
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h3>My Assembly Projects</h3>
+            </div>
+            <div class="card-body">
+                <p>Here are your previously processed assembly projects:</p>
+
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Project Name</th>
+                            <th>Date Created</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Sample Project 1</td>
+                            <td>2023-06-15</td>
+                            <td><span class="badge" style="background-color: #28a745; color: white;">Completed</span></td>
+                            <td>
+                                <a href="/Assembly" class="btn btn-sm btn-primary">View</a>
+                                <a href="#" class="btn btn-sm btn-secondary">Re-assemble</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Human Chromosome Fragment</td>
+                            <td>2023-06-10</td>
+                            <td><span class="badge" style="background-color: #28a745; color: white;">Completed</span></td>
+                            <td>
+                                <a href="/Assembly" class="btn btn-sm btn-primary">View</a>
+                                <a href="#" class="btn btn-sm btn-secondary">Re-assemble</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Bacterial Plasmid Analysis</td>
+                            <td>2023-06-05</td>
+                            <td><span class="badge" style="background-color: #ffc107; color: black;">In Progress</span></td>
+                            <td>
+                                <a href="/Assembly" class="btn btn-sm btn-primary">View</a>
+                                <a href="#" class="btn btn-sm btn-secondary">Re-assemble</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Viral Genome Segment</td>
+                            <td>2023-05-28</td>
+                            <td><span class="badge" style="background-color: #dc3545; color: white;">Failed</span></td>
+                            <td>
+                                <a href="#" class="btn btn-sm btn-secondary">Retry</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="mt-3">
+                    <a href="/Index" class="btn btn-primary">New Assembly Project</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
