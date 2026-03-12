@@ -13,43 +13,16 @@
             <div class="card-body">
                 <p>Загрузите один или несколько файлов .ab1 (чтения Сэнгера) для выполнения сборки генома</p>
 
-                <form id="uploadForm" method="post" action="/Upload" enctype="multipart/form-data" onsubmit="return simulateUploadAndProcess();">
+                <form id="uploadForm" method="post" enctype="multipart/form-data">
                     <div class="form-group">
                         <label for="fileInput">Выберите .ab1 файлы:</label>
-                        <input type="file" class="form-control" id="fileInput" name="files" multiple accept=".ab1" required />
-                        <small class="form-text text-muted">Вы можете выбрать несколько файлов .ab1 для сборки.</small>
+                        <input type="file" class="form-control" id="fileInput" name="files" multiple accept=".ab1" />
+                        <small class="form-text text-muted">Обработка файлов будет доступна после подключения серверной логики.</small>
                     </div>
                     <button type="submit" class="btn btn-primary">Загрузить и начать сборку</button>
                 </form>
 
-                <!-- Progress bar (initially hidden) -->
-                <div class="mt-3" style="display:none;" id="progressContainer">
-                    <div class="progress" style="height: 20px;">
-                        <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%; background-color: #007bff;">0%</div>
-                    </div>
-                    <p class="mt-1">Обработка файлов...</p>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <h4>About Sanger Sequencing</h4>
-            </div>
-            <div class="card-body">
-                <p>Секвенирование по Сэнгеру, также известное как метод прекращения цепи, это метод секвенирования ДНК, основанный на селективном включении дидезоксинуклеотидов, прекращающих рост цепи.</p>
-                <p>Это приложение помогает собрать несколько чтений секвенирования по Сэнгеру (файлы .ab1) в консенсусную последовательность.</p>
             </div>
         </div>
     </div>
 </div>
-
-@section Scripts {
-    <script>
-        document.getElementById('uploadForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            simulateUploadAndProcess();
-        });
-    </script>
-}

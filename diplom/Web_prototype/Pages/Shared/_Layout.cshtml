@@ -12,12 +12,20 @@
             <div class="container">
                 <a class="navbar-brand" href="/">Сборка генома</a>
                 <div>
-                    @if (Context.Request.Path.Value.Contains("Home") || Context.Request.Path.Value == "/")
+                    @{
+                        var path = Context.Request.Path.Value ?? string.Empty;
+                        var isGuestPage = path == "/"
+                        || path.Equals("/Login", StringComparison.OrdinalIgnoreCase)
+                        || path.Equals("/Register", StringComparison.OrdinalIgnoreCase)
+                        || path.Contains("Home", StringComparison.OrdinalIgnoreCase);
+                    }
+
+                    @if (isGuestPage)
                     {
                         <a class="nav-link" href="/Login">Войти</a>
                         <a class="nav-link" href="/Register">Регистрация</a>
                     }
-                    else if (Context.Request.Path.Value.Contains("Account"))
+                    else if (path.Contains("Account", StringComparison.OrdinalIgnoreCase))
                     {
                         <a class="nav-link" href="/Index">Главная</a>
                     }
