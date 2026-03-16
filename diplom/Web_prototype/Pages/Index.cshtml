@@ -1,28 +1,76 @@
 ﻿@page
+@model Web_prototype.Pages.IndexModel
 @{
     ViewData["Title"] = "Upload Reads";
     Layout = "_Layout";
 }
 
-<div class="row">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h3>Загрузить риды</h3>
-            </div>
-            <div class="card-body">
-                <p>Загрузите один или несколько файлов .ab1 (чтения Сэнгера) для выполнения сборки генома</p>
+<div class="container-fluid mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h3>Загрузить риды</h3>
+        </div>
+        <div class="card-body">
+            <p>Загрузите один или несколько файлов .ab1 (чтения Сэнгера) для выполнения сборки генома</p>
 
-                <form id="uploadForm" method="post" enctype="multipart/form-data">
-                    <div class="form-group">
-                        <label for="fileInput">Выберите .ab1 файлы:</label>
-                        <input type="file" class="form-control" id="fileInput" name="files" multiple accept=".ab1" />
-                        <small class="form-text text-muted">Обработка файлов будет доступна после подключения серверной логики.</small>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Загрузить и начать сборку</button>
-                </form>
+            <form method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <div class="form-group mb-3">
+                    <label for="UploadedFiles">Выберите .ab1 файл:</label>
+                    <input type="file" class="form-control" id="UploadedFiles" name="UploadedFiles" accept=".ab1" multiple />
+                </div>
+                <button type="submit" class="btn btn-primary">Загрузить и начать сборку</button>
+            </form>
 
-            </div>
+            @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+            {
+                <div class="alert alert-danger mt-3">@Model.ErrorMessage</div>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
+            {
+                <div class="alert alert-success mt-3">@Model.SuccessMessage</div>
+            }
         </div>
     </div>
+
+    @if (Model.FilePreviews.Count > 0)
+    {
+        @foreach (var preview in Model.FilePreviews)
+        {
+            <div class="card">
+                <div class="card-header">
+                    <strong>@preview.UploadedFileName</strong>
+                </div>
+
+                <div class="card-body">
+                    <h5>Сводка</h5>
+                    <pre class="bg-light p-3 border rounded">@preview.FileInfoMessage</pre>
+
+                    <h5>Первые символы последовательности</h5>
+                    @if (!string.IsNullOrWhiteSpace(preview.SequencePreview))
+                    {
+                        <pre class="bg-light p-3 border rounded" style="white-space: pre-wrap; word-break: break-all;">@preview.SequencePreview</pre>
+                    }
+                    else
+                    {
+                        <p class="text-muted">Последовательность не найдена.</p>
+                    }
+
+                    <h5>Полная последовательность</h5>
+                    @if (!string.IsNullOrWhiteSpace(preview.Sequence))
+                    {
+                        <pre class="bg-light p-3 border rounded" style="white-space: pre-wrap; word-break: break-all;">@preview.Sequence</pre>
+                    }
+                    else
+                    {
+                        <p class="text-muted">Полная последовательность не найдена.</p>
+                    }
+
+                    <h5>Hex dump первых 512 байт</h5>
+                    <pre class="bg-light p-3 border rounded" style="overflow-x: auto;">@preview.FileContentHexDump</pre>
+                </div>
+            </div>
+        }
+    }
 </div>
