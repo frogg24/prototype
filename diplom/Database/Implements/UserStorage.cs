@@ -45,20 +45,20 @@ namespace Database.Implements
 
             if (model.Id.HasValue)
             {
-                var tec = await context.Users.FirstOrDefaultAsync(x => x.Id == model.Id.Value);
-                return tec?.GetViewModel;
+                var user = await context.Users.FirstOrDefaultAsync(x => x.Id == model.Id.Value);
+                return user?.GetViewModel;
             }
 
             if (!string.IsNullOrEmpty(model.Username))
             {
-                var tec = await context.Users.FirstOrDefaultAsync(x => x.Username.Equals(model.Username));
-                return tec?.GetViewModel;
+                var user = await context.Users.FirstOrDefaultAsync(x => x.Username.Equals(model.Username));
+                return user?.GetViewModel;
             }
 
             if (!string.IsNullOrEmpty(model.Email))
             {
-                var tec = await context.Users.FirstOrDefaultAsync(x => x.Email.Equals(model.Email));
-                return tec?.GetViewModel;
+                var user = await context.Users.FirstOrDefaultAsync(x => x.Email.Equals(model.Email));
+                return user?.GetViewModel;
             }
             //TODO: make filter by created date
             return null;

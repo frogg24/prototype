@@ -28,8 +28,6 @@ namespace Database.Models
 
         public int SequenceLength { get; set; }
 
-        // Forward / Reverse / Unknown
-        [MaxLength(20)]
         public ReadDirectionEnum Direction { get; set; } = ReadDirectionEnum.Unknown;
 
         [MaxLength(500)]
@@ -73,7 +71,6 @@ namespace Database.Models
             SequenceLength = read.Sequence.Length;
             Direction = read.Direction;
             Notes = read.Notes;
-            CreatedAt = read.CreatedAt;
             UserId = read.UserId;
         }
 

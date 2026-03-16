@@ -31,7 +31,6 @@ namespace DataModels
         public int SequenceLength { get; set; }
 
         // Forward / Reverse / Unknown
-        [MaxLength(20)]
         public ReadDirectionEnum Direction { get; set; } = ReadDirectionEnum.Unknown;
 
         //// Если захочешь потом использовать quality values
