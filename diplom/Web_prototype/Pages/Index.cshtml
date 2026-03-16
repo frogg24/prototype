@@ -19,7 +19,7 @@
                     <label for="UploadedFiles">Выберите .ab1 файл:</label>
                     <input type="file" class="form-control" id="UploadedFiles" name="UploadedFiles" accept=".ab1" multiple />
                 </div>
-                <button type="submit" class="btn btn-primary">Загрузить и начать сборку</button>
+                <button type="submit" class="btn btn-primary">Загрузить</button>
             </form>
 
             @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
@@ -34,43 +34,47 @@
         </div>
     </div>
 
-    @if (Model.FilePreviews.Count > 0)
-    {
-        @foreach (var preview in Model.FilePreviews)
-        {
-            <div class="card">
-                <div class="card-header">
-                    <strong>@preview.UploadedFileName</strong>
+    <div class="card">
+        <div class="card-header">
+            <h4>Сохраненные риды</h4>
+        </div>
+        <div class="card-body">
+            @if (Model.Reads.Count == 0)
+            {
+                <p class="text-muted mb-0">Пока нет загруженных ридов.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-striped table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th>Файл</th>
+                                <th>Sample</th>
+                                <th>Instrument</th>
+                                <th>Длина</th>
+                                <th>Direction</th>
+                                <th>Последовательность</th>
+                                <th>Дата</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var read in Model.Reads.OrderByDescending(r => r.CreatedAt))
+                            {
+                                <tr>
+                                    <td>@read.FileName</td>
+                                    <td>@(read.SampleName ?? "-")</td>
+                                    <td>@(read.InstrumentModel ?? "-")</td>
+                                    <td>@read.SequenceLength</td>
+                                    <td>@read.Direction</td>
+                                    <td style="max-width: 420px; word-break: break-all;">@(read.Sequence.Length > 120 ? read.Sequence[..120] + "..." : read.Sequence)</td>
+                                    <td>@read.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
                 </div>
-
-                <div class="card-body">
-                    <h5>Сводка</h5>
-                    <pre class="bg-light p-3 border rounded">@preview.FileInfoMessage</pre>
-
-                    <h5>Первые символы последовательности</h5>
-                    @if (!string.IsNullOrWhiteSpace(preview.SequencePreview))
-                    {
-                        <pre class="bg-light p-3 border rounded" style="white-space: pre-wrap; word-break: break-all;">@preview.SequencePreview</pre>
-                    }
-                    else
-                    {
-                        <p class="text-muted">Последовательность не найдена.</p>
-                    }
-
-                    <h5>Полная последовательность</h5>
-                    @if (!string.IsNullOrWhiteSpace(preview.Sequence))
-                    {
-                        <pre class="bg-light p-3 border rounded" style="white-space: pre-wrap; word-break: break-all;">@preview.Sequence</pre>
-                    }
-                    else
-                    {
-                        <p class="text-muted">Полная последовательность не найдена.</p>
-                    }
-
-                    <h5>Hex dump первых 512 байт</h5>
-                    <pre class="bg-light p-3 border rounded" style="overflow-x: auto;">@preview.FileContentHexDump</pre>
-                </div>
-            </div>
-        }
-    }
+            }
+        </div>
+    </div>
 </div>

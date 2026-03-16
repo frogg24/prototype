@@ -1,7 +1,11 @@
-﻿using System.Buffers.Binary;
+﻿using System;
+using System.Buffers.Binary;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
-namespace Web_prototype
+namespace BusinessLogic
 {
     public static class Ab1Parser
     {
@@ -84,32 +88,6 @@ namespace Web_prototype
             };
         }
 
-        public static string ExtractSequence(byte[] buffer)
-        {
-            ArgumentNullException.ThrowIfNull(buffer);
-
-            if (buffer.Length < 128)
-            {
-                throw new InvalidDataException("Файл слишком короткий для AB1/ABIF.");
-            }
-
-            var signature = Encoding.ASCII.GetString(buffer, 0, 4);
-            if (!string.Equals(signature, "ABIF", StringComparison.Ordinal))
-            {
-                throw new InvalidDataException("Файл не является AB1/ABIF.");
-            }
-
-            var rootEntry = ReadDirectoryEntry(buffer, 6);
-
-            if (!string.Equals(rootEntry.TagName, "tdir", StringComparison.Ordinal))
-            {
-                throw new InvalidDataException("Не найден корневой каталог ABIF (tdir).");
-            }
-
-            var entries = ReadAllDirectoryEntries(buffer, rootEntry);
-            return ExtractSequence(entries, buffer);
-        }
-
         private static string ExtractSequence(IReadOnlyList<Ab1DirectoryEntry> entries, byte[] buffer)
         {
             var entry =
@@ -164,21 +142,14 @@ namespace Web_prototype
             };
         }
 
-        private static Ab1DirectoryEntry? FindEntry(
-            IEnumerable<Ab1DirectoryEntry> entries,
-            string tagName,
-            uint tagNumber)
+        private static Ab1DirectoryEntry? FindEntry(IEnumerable<Ab1DirectoryEntry> entries, string tagName, uint tagNumber)
         {
             return entries.FirstOrDefault(e =>
                 string.Equals(e.TagName, tagName, StringComparison.Ordinal) &&
                 e.TagNumber == tagNumber);
         }
 
-        private static string? GetText(
-            IEnumerable<Ab1DirectoryEntry> entries,
-            byte[] buffer,
-            string tagName,
-            uint tagNumber)
+        private static string? GetText(IEnumerable<Ab1DirectoryEntry> entries, byte[] buffer, string tagName, uint tagNumber)
         {
             var entry = FindEntry(entries, tagName, tagNumber);
             if (entry is null)
@@ -195,11 +166,7 @@ namespace Web_prototype
             return DecodeText(bytes);
         }
 
-        private static byte[]? GetBytes(
-            IEnumerable<Ab1DirectoryEntry> entries,
-            byte[] buffer,
-            string tagName,
-            uint tagNumber)
+        private static byte[]? GetBytes(IEnumerable<Ab1DirectoryEntry> entries, byte[] buffer, string tagName, uint tagNumber)
         {
             var entry = FindEntry(entries, tagName, tagNumber);
             return entry is null ? null : ReadEntryData(buffer, entry);
@@ -211,8 +178,7 @@ namespace Web_prototype
 
             if (bytes.Length % 2 != 0)
             {
-                throw new InvalidDataException(
-                    $"Тег {entry.TagName}{entry.TagNumber} содержит нечетное число байт для Int16.");
+                throw new InvalidDataException($"Тег {entry.TagName}{entry.TagNumber} содержит нечетное число байт для Int16.");
             }
 
             var result = new short[bytes.Length / 2];
@@ -230,26 +196,18 @@ namespace Web_prototype
             checked
             {
                 var dataSize = (int)entry.DataSize;
-
-                if (dataSize < 0)
-                {
-                    throw new InvalidDataException("Некорректный размер данных в ABIF.");
-                }
-
-                // Если данных 4 байта или меньше, ABIF может хранить их прямо в поле DataOffset.
-                if (dataSize <= 4)
+                 if (dataSize <= 4)
                 {
                     var inline = new byte[4];
                     BinaryPrimitives.WriteUInt32BigEndian(inline, entry.DataOffset);
-                    return inline.Take(dataSize).ToArray();
+                    return inline.Take(Math.Max(dataSize, 0)).ToArray();
                 }
 
                 var dataOffset = (int)entry.DataOffset;
 
                 if (dataOffset < 0 || dataOffset + dataSize > buffer.Length)
                 {
-                    throw new InvalidDataException(
-                        $"Данные тега {entry.TagName}{entry.TagNumber} выходят за пределы файла.");
+                    throw new InvalidDataException($"Данные тега {entry.TagName}{entry.TagNumber} выходят за пределы файла.");
                 }
 
                 return buffer.AsSpan(dataOffset, dataSize).ToArray();
@@ -263,7 +221,6 @@ namespace Web_prototype
                 return string.Empty;
             }
 
-            // Некоторые строки в ABIF хранятся как Pascal string: первый байт = длина строки.
             var pascalLength = bytes[0];
 
             if (pascalLength > 0 && pascalLength <= bytes.Length - 1)
@@ -278,39 +235,23 @@ namespace Web_prototype
 
             return Encoding.ASCII.GetString(bytes).TrimEnd('\0');
         }
-
-        private static ushort ReadUInt16BE(byte[] buffer, int offset)
-        {
-            return BinaryPrimitives.ReadUInt16BigEndian(buffer.AsSpan(offset, 2));
-        }
-
-        private static uint ReadUInt32BE(byte[] buffer, int offset)
-        {
-            return BinaryPrimitives.ReadUInt32BigEndian(buffer.AsSpan(offset, 4));
-        }
-
-        private static short ReadInt16BE(byte[] buffer, int offset)
-        {
-            return BinaryPrimitives.ReadInt16BigEndian(buffer.AsSpan(offset, 2));
-        }
+        private static ushort ReadUInt16BE(byte[] buffer, int offset) => BinaryPrimitives.ReadUInt16BigEndian(buffer.AsSpan(offset, 2));
+        private static uint ReadUInt32BE(byte[] buffer, int offset) => BinaryPrimitives.ReadUInt32BigEndian(buffer.AsSpan(offset, 4));
+        private static short ReadInt16BE(byte[] buffer, int offset) => BinaryPrimitives.ReadInt16BigEndian(buffer.AsSpan(offset, 2));
     }
-
     public sealed class Ab1ReadResult
     {
         public string Signature { get; init; } = string.Empty;
         public ushort Version { get; init; }
         public Ab1DirectoryEntry RootDirectoryEntry { get; init; } = new();
         public IReadOnlyList<Ab1DirectoryEntry> Entries { get; init; } = Array.Empty<Ab1DirectoryEntry>();
-
         public string Sequence { get; init; } = string.Empty;
         public IReadOnlyList<byte> QualityValues { get; init; } = Array.Empty<byte>();
         public string? BaseOrder { get; init; }
         public string? SampleName { get; init; }
         public string? InstrumentModel { get; init; }
-        public IReadOnlyDictionary<string, short[]> Traces { get; init; }
-            = new Dictionary<string, short[]>();
+        public IReadOnlyDictionary<string, short[]> Traces { get; init; } = new Dictionary<string, short[]>();
     }
-
     public sealed class Ab1DirectoryEntry
     {
         public string TagName { get; init; } = string.Empty;

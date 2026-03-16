@@ -11,7 +11,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<UserStorage>();
+builder.Services.AddScoped<ReadStorage>();
 builder.Services.AddScoped<UserLogic>();
+builder.Services.AddScoped<ReadLogic>();
 
 var app = builder.Build();
 

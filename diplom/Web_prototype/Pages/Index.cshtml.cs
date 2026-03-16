@@ -1,31 +1,54 @@
+using DataModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System.Text;
+using System.Net.Http.Headers;
+using System.Security.Claims;
+using System.Text.Json;
 
 namespace Web_prototype.Pages
 {
     public class IndexModel : PageModel
     {
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<IndexModel> _logger;
 
-        public IndexModel(ILogger<IndexModel> logger)
+        public IndexModel(IHttpClientFactory httpClientFactory, ILogger<IndexModel> logger)
         {
+            _httpClientFactory = httpClientFactory;
             _logger = logger;
         }
 
         [BindProperty]
         public List<IFormFile> UploadedFiles { get; set; } = new();
 
-        public List<FilePreviewModel> FilePreviews { get; } = new();
-
+        public List<ReadModel> Reads { get; private set; } = new();
         public string? ErrorMessage { get; private set; }
         public string? SuccessMessage { get; private set; }
 
+        public async Task<IActionResult> OnGetAsync()
+        {
+            var userId = GetCurrentUserId();
+            if (userId <= 0)
+            {
+                return RedirectToPage("/Login");
+            }
+
+            await LoadReadsAsync(userId);
+            return Page();
+        }
+
         public async Task<IActionResult> OnPostAsync()
         {
+            var userId = GetCurrentUserId();
+            if (userId <= 0)
+            {
+                return RedirectToPage("/Login");
+            }
+
             if (UploadedFiles.Count == 0 || UploadedFiles.All(f => f.Length == 0))
             {
-                ErrorMessage = "Выберите файлы для загрузки.";
+                ErrorMessage = "Выберите хотя бы один .ab1 файл.";
+                await LoadReadsAsync(userId);
                 return Page();
             }
 
@@ -33,134 +56,83 @@ namespace Web_prototype.Pages
             {
                 if (!string.Equals(Path.GetExtension(uploadedFile.FileName), ".ab1", StringComparison.OrdinalIgnoreCase))
                 {
-                    ErrorMessage = "Поддерживается только формат .ab1. Удалите файлы с другим расширением.";
-                    FilePreviews.Clear();
+                    ErrorMessage = "Поддерживаются только файлы .ab1.";
+                    await LoadReadsAsync(userId);
                     return Page();
                 }
             }
 
-            foreach (var uploadedFile in UploadedFiles.Where(f => f.Length > 0))
+            var client = _httpClientFactory.CreateClient("ApiClient");
+            using var formData = new MultipartFormDataContent();
+
+            foreach (var file in UploadedFiles.Where(f => f.Length > 0))
             {
-                try
-                {
-                    var uploadedFileName = Path.GetFileName(uploadedFile.FileName);
+                await using var stream = file.OpenReadStream();
+                using var memory = new MemoryStream();
+                await stream.CopyToAsync(memory);
 
-                    await using var memoryStream = new MemoryStream();
-                    await uploadedFile.CopyToAsync(memoryStream);
-                    var fileBytes = memoryStream.ToArray();
-
-                    var parsed = Ab1Parser.Parse(fileBytes);
-
-                    var filePreview = new FilePreviewModel
-                    {
-                        UploadedFileName = uploadedFileName,
-                        FileInfoMessage = BuildAb1Summary(parsed),
-                        Sequence = parsed.Sequence,
-                        SequencePreview = parsed.Sequence[..Math.Min(parsed.Sequence.Length, 120)],
-                        FileContentHexDump = BuildHexDump(fileBytes.Take(512).ToArray())
-                    };
-
-                    FilePreviews.Add(filePreview);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Ошибка при разборе файла {FileName}", uploadedFile.FileName);
-
-                    FilePreviews.Add(new FilePreviewModel
-                    {
-                        UploadedFileName = uploadedFile.FileName,
-                        FileInfoMessage = $"Ошибка разбора: {ex.Message}",
-                        Sequence = string.Empty,
-                        SequencePreview = string.Empty,
-                        FileContentHexDump = string.Empty
-                    });
-                }
+                var byteContent = new ByteArrayContent(memory.ToArray());
+                byteContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType ?? "application/octet-stream");
+                formData.Add(byteContent, "files", file.FileName);
             }
 
-            SuccessMessage = "Файл успешно загружен.";
+            var response = await client.PostAsync($"api/read/upload?userId={userId}", formData);
+            var content = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                ErrorMessage = TryGetMessage(content) ?? "Ошибка загрузки файлов.";
+                await LoadReadsAsync(userId);
+                return Page();
+            }
+
+            SuccessMessage = "Файлы загружены и обработаны.";
+            await LoadReadsAsync(userId);
             return Page();
         }
 
-        private static string BuildAb1Summary(Ab1ReadResult parsed)
+        private async Task LoadReadsAsync(int userId)
         {
-            var builder = new StringBuilder();
+            var client = _httpClientFactory.CreateClient("ApiClient");
+            var response = await client.GetAsync($"api/read/user/{userId}");
 
-            builder.AppendLine($"Signature: {parsed.Signature}");
-            builder.AppendLine($"Version: {parsed.Version / 100.0:F2}");
-            builder.AppendLine($"Directory entries: {parsed.Entries.Count}");
-
-            if (!string.IsNullOrWhiteSpace(parsed.SampleName))
+            if (!response.IsSuccessStatusCode)
             {
-                builder.AppendLine($"Sample name: {parsed.SampleName}");
+                ErrorMessage ??= "Не удалось загрузить риды пользователя.";
+                return;
             }
 
-            if (!string.IsNullOrWhiteSpace(parsed.InstrumentModel))
+            var content = await response.Content.ReadAsStringAsync();
+            Reads = JsonSerializer.Deserialize<List<ReadModel>>(content, new JsonSerializerOptions
             {
-                builder.AppendLine($"Instrument: {parsed.InstrumentModel}");
-            }
-
-            if (!string.IsNullOrWhiteSpace(parsed.BaseOrder))
-            {
-                builder.AppendLine($"Base order: {parsed.BaseOrder}");
-            }
-
-            builder.AppendLine($"Sequence length: {parsed.Sequence.Length}");
-            builder.AppendLine($"Quality values: {parsed.QualityValues.Count}");
-
-            if (parsed.Traces.Count > 0)
-            {
-                builder.AppendLine("Trace channels:");
-                foreach (var trace in parsed.Traces)
-                {
-                    builder.AppendLine($"  {trace.Key}: {trace.Value.Length} points");
-                }
-            }
-
-            return builder.ToString();
+                PropertyNameCaseInsensitive = true,
+            }) ?? new List<ReadModel>();
         }
 
-        private static string BuildHexDump(byte[] bytes)
+        private int GetCurrentUserId()
         {
-            var length = bytes.Length;
-            var builder = new StringBuilder();
-
-            for (var i = 0; i < length; i += 16)
-            {
-                builder.Append($"{i:X8}  ");
-
-                for (var j = 0; j < 16; j++)
-                {
-                    if (i + j < length)
-                    {
-                        builder.Append($"{bytes[i + j]:X2} ");
-                    }
-                    else
-                    {
-                        builder.Append("   ");
-                    }
-                }
-
-                builder.Append(" ");
-
-                for (var j = 0; j < 16 && i + j < length; j++)
-                {
-                    var current = bytes[i + j];
-                    builder.Append(current is >= 32 and <= 126 ? (char)current : '.');
-                }
-
-                builder.AppendLine();
-            }
-
-            return builder.ToString();
+            var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return int.TryParse(claim, out var userId) ? userId : 0;
         }
 
-        public class FilePreviewModel
+        private static string? TryGetMessage(string content)
         {
-            public string UploadedFileName { get; init; } = string.Empty;
-            public string FileInfoMessage { get; init; } = string.Empty;
-            public string Sequence { get; init; } = string.Empty;
-            public string SequencePreview { get; init; } = string.Empty;
-            public string FileContentHexDump { get; init; } = string.Empty;
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                return null;
+            }
+
+            try
+            {
+                using var document = JsonDocument.Parse(content);
+                return document.RootElement.TryGetProperty("message", out var message)
+                    ? message.GetString()
+                    : null;
+            }
+            catch (JsonException)
+            {
+                return null;
+            }
         }
     }
 }
