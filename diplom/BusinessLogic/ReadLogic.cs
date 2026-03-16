@@ -18,13 +18,8 @@ namespace BusinessLogic
             _readStorage = readStorage;
         }
 
-        public async Task<List<ReadModel>> UploadReadsAsync(int userId, IEnumerable<UploadReadFileModel> files)
+        public async Task<List<ReadModel>> UploadReadsAsync(int? userId, IEnumerable<UploadReadFileModel> files)
         {
-            if (userId <= 0)
-            {
-                throw new ArgumentException("Некорректный пользователь", nameof(userId));
-            }
-
             var uploaded = new List<ReadModel>();
 
             foreach (var file in files)

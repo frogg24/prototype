@@ -1,6 +1,8 @@
 ﻿using BusinessLogic;
 using DataModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace API.Controllers
 {
@@ -16,13 +18,21 @@ namespace API.Controllers
         }
 
         [HttpPost("upload")]
-        public async Task<IActionResult> Upload([FromQuery] int userId, [FromForm] List<IFormFile> files)
+        [AllowAnonymous]
+        public async Task<IActionResult> Upload([FromForm] List<IFormFile> files)
         {
             try
             {
                 if (files.Count == 0)
                 {
                     return BadRequest(new { message = "Не выбраны файлы для загрузки" });
+                }
+
+                int? userId = null;
+                var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (int.TryParse(claim, out var parsedUserId))
+                {
+                    userId = parsedUserId;
                 }
 
                 var models = new List<UploadReadFileModel>();

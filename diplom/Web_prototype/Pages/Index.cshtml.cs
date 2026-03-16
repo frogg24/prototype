@@ -28,27 +28,20 @@ namespace Web_prototype.Pages
         public async Task<IActionResult> OnGetAsync()
         {
             var userId = GetCurrentUserId();
-            if (userId <= 0)
+            if (userId > 0)
             {
-                return RedirectToPage("/Login");
+                await LoadReadsAsync(userId);
             }
 
-            await LoadReadsAsync(userId);
             return Page();
         }
 
         public async Task<IActionResult> OnPostAsync()
         {
-            var userId = GetCurrentUserId();
-            if (userId <= 0)
-            {
-                return RedirectToPage("/Login");
-            }
-
             if (UploadedFiles.Count == 0 || UploadedFiles.All(f => f.Length == 0))
             {
                 ErrorMessage = "Выберите хотя бы один .ab1 файл.";
-                await LoadReadsAsync(userId);
+                await LoadReadsForAuthenticatedUserAsync(GetCurrentUserId());
                 return Page();
             }
 
@@ -57,7 +50,7 @@ namespace Web_prototype.Pages
                 if (!string.Equals(Path.GetExtension(uploadedFile.FileName), ".ab1", StringComparison.OrdinalIgnoreCase))
                 {
                     ErrorMessage = "Поддерживаются только файлы .ab1.";
-                    await LoadReadsAsync(userId);
+                    await LoadReadsForAuthenticatedUserAsync(GetCurrentUserId());
                     return Page();
                 }
             }
@@ -76,19 +69,30 @@ namespace Web_prototype.Pages
                 formData.Add(byteContent, "files", file.FileName);
             }
 
-            var response = await client.PostAsync($"api/read/upload?userId={userId}", formData);
+            var response = await client.PostAsync("api/read/upload", formData);
             var content = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)
             {
                 ErrorMessage = TryGetMessage(content) ?? "Ошибка загрузки файлов.";
-                await LoadReadsAsync(userId);
+                await LoadReadsForAuthenticatedUserAsync(GetCurrentUserId());
                 return Page();
             }
 
             SuccessMessage = "Файлы загружены и обработаны.";
-            await LoadReadsAsync(userId);
+            await LoadReadsForAuthenticatedUserAsync(GetCurrentUserId());
             return Page();
+        }
+
+        private Task LoadReadsForAuthenticatedUserAsync(int userId)
+        {
+            if (userId <= 0)
+            {
+                Reads = new List<ReadModel>();
+                return Task.CompletedTask;
+            }
+
+            return LoadReadsAsync(userId);
         }
 
         private async Task LoadReadsAsync(int userId)
@@ -112,7 +116,7 @@ namespace Web_prototype.Pages
         private int GetCurrentUserId()
         {
             var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            return int.TryParse(claim, out var userId) ? userId : 0;
+            return int.TryParse(claim, out var userId) ? userId : -1;
         }
 
         private static string? TryGetMessage(string content)
