@@ -29,10 +29,19 @@ namespace API.Controllers
                 }
 
                 int? userId = null;
-                var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (int.TryParse(claim, out var parsedUserId))
+                if (Request.Headers.TryGetValue("X-User-Id", out var userIdHeader)
+                    && int.TryParse(userIdHeader.FirstOrDefault(), out var headerUserId)
+                    && headerUserId > 0)
                 {
-                    userId = parsedUserId;
+                    userId = headerUserId;
+                }
+                else
+                {
+                    var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                    if (int.TryParse(claim, out var parsedUserId) && parsedUserId > 0)
+                    {
+                        userId = parsedUserId;
+                    }
                 }
 
                 var models = new List<UploadReadFileModel>();

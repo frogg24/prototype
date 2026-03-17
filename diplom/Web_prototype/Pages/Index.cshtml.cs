@@ -38,10 +38,12 @@ namespace Web_prototype.Pages
 
         public async Task<IActionResult> OnPostAsync()
         {
+            var currentUserId = GetCurrentUserId();
+
             if (UploadedFiles.Count == 0 || UploadedFiles.All(f => f.Length == 0))
             {
                 ErrorMessage = "Выберите хотя бы один .ab1 файл.";
-                await LoadReadsForAuthenticatedUserAsync(GetCurrentUserId());
+                await LoadReadsForAuthenticatedUserAsync(currentUserId);
                 return Page();
             }
 
@@ -50,12 +52,18 @@ namespace Web_prototype.Pages
                 if (!string.Equals(Path.GetExtension(uploadedFile.FileName), ".ab1", StringComparison.OrdinalIgnoreCase))
                 {
                     ErrorMessage = "Поддерживаются только файлы .ab1.";
-                    await LoadReadsForAuthenticatedUserAsync(GetCurrentUserId());
+                    await LoadReadsForAuthenticatedUserAsync(currentUserId);
                     return Page();
                 }
             }
 
             var client = _httpClientFactory.CreateClient("ApiClient");
+            client.DefaultRequestHeaders.Remove("X-User-Id");
+            if (currentUserId > 0)
+            {
+                client.DefaultRequestHeaders.Add("X-User-Id", currentUserId.ToString());
+            }
+
             using var formData = new MultipartFormDataContent();
 
             foreach (var file in UploadedFiles.Where(f => f.Length > 0))
@@ -75,12 +83,12 @@ namespace Web_prototype.Pages
             if (!response.IsSuccessStatusCode)
             {
                 ErrorMessage = TryGetMessage(content) ?? "Ошибка загрузки файлов.";
-                await LoadReadsForAuthenticatedUserAsync(GetCurrentUserId());
+                await LoadReadsForAuthenticatedUserAsync(currentUserId);
                 return Page();
             }
 
             SuccessMessage = "Файлы загружены и обработаны.";
-            await LoadReadsForAuthenticatedUserAsync(GetCurrentUserId());
+            await LoadReadsForAuthenticatedUserAsync(currentUserId);
             return Page();
         }
 
