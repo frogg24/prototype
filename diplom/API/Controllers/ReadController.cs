@@ -19,32 +19,18 @@ namespace API.Controllers
 
         [HttpPost("upload")]
         [AllowAnonymous]
-        public async Task<IActionResult> Upload([FromForm] List<IFormFile> files)
+        [HttpPost("project/{projectId:int}/upload")]
+        public async Task<IActionResult> Upload(int projectId, [FromForm] List<IFormFile> files)
         {
             try
             {
-                if (files.Count == 0)
+                if (files == null || files.Count == 0)
                 {
                     return BadRequest(new { message = "Не выбраны файлы для загрузки" });
                 }
 
-                int? userId = null;
-                if (Request.Headers.TryGetValue("X-User-Id", out var userIdHeader)
-                    && int.TryParse(userIdHeader.FirstOrDefault(), out var headerUserId)
-                    && headerUserId > 0)
-                {
-                    userId = headerUserId;
-                }
-                else
-                {
-                    var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                    if (int.TryParse(claim, out var parsedUserId) && parsedUserId > 0)
-                    {
-                        userId = parsedUserId;
-                    }
-                }
-
                 var models = new List<UploadReadFileModel>();
+
                 foreach (var file in files.Where(f => f.Length > 0))
                 {
                     await using var memory = new MemoryStream();
@@ -57,7 +43,7 @@ namespace API.Controllers
                     });
                 }
 
-                var saved = await _readLogic.UploadReadsAsync(userId, models);
+                var saved = await _readLogic.UploadReadsAsync(projectId, models);
                 return Ok(saved);
             }
             catch (ArgumentException ex)
@@ -74,13 +60,53 @@ namespace API.Controllers
             }
         }
 
-        [HttpGet("user/{userId:int}")]
-        public async Task<IActionResult> GetByUser(int userId)
+        [HttpGet("project/{projectId:int}")]
+        public async Task<IActionResult> GetByProject(int projectId)
         {
             try
             {
-                var reads = await _readLogic.GetUserReadsAsync(userId);
+                var reads = await _readLogic.GetProjectReadsAsync(projectId);
                 return Ok(reads);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("{id:int}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            try
+            {
+                var read = await _readLogic.ReadElement(new ReadSearchModel { Id = id });
+
+                if (read == null)
+                {
+                    return NotFound(new { message = "Рид не найден" });
+                }
+
+                return Ok(read);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            try
+            {
+                var result = await _readLogic.Delete(id);
+
+                if (!result)
+                {
+                    return NotFound(new { message = "Рид не найден" });
+                }
+
+                return Ok(new { message = "Рид удалён" });
             }
             catch (Exception ex)
             {

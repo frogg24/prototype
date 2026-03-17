@@ -22,5 +22,6 @@ namespace Database
         }
         public virtual DbSet<User> Users { set; get; }
         public virtual DbSet<Read> Reads { set; get; }
+        public virtual DbSet<Project> Projects { set; get; }
     }
 }

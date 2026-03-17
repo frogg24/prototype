@@ -26,9 +26,9 @@ namespace Database.Implements
             {
                 query = query.Where(x => x.Id == model.Id.Value);
             }
-            if (model.UserId.HasValue)
+            if (model.ProjectId.HasValue)
             {
-                query = query.Where(x => x.UserId == model.UserId.Value);
+                query = query.Where(x => x.ProjectId == model.ProjectId.Value);
             }
             if (!string.IsNullOrEmpty(model.SampleName))
             {
@@ -53,9 +53,9 @@ namespace Database.Implements
                 return read?.GetViewModel;
             }
 
-            if (model.UserId.HasValue)
+            if (model.ProjectId.HasValue)
             {
-                var read = await context.Reads.FirstOrDefaultAsync(x => x.UserId == model.UserId.Value);
+                var read = await context.Reads.FirstOrDefaultAsync(x => x.ProjectId == model.ProjectId.Value);
                 return read?.GetViewModel;
             }
 

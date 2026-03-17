@@ -34,7 +34,7 @@ namespace Database.Models
         public string? Notes { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public int? UserId { get; set; }
+        public int? ProjectId { get; set; }
 
         public static Read? Create(ReadModel read)
         {
@@ -53,7 +53,7 @@ namespace Database.Models
                 Direction = read.Direction,
                 Notes = read.Notes,
                 CreatedAt = read.CreatedAt,
-                UserId = read.UserId,
+                ProjectId = read.ProjectId,
             };
         }
 
@@ -71,7 +71,7 @@ namespace Database.Models
             SequenceLength = read.Sequence.Length;
             Direction = read.Direction;
             Notes = read.Notes;
-            UserId = read.UserId;
+            ProjectId = read.ProjectId;
         }
 
         public ReadModel GetViewModel => new()
@@ -85,7 +85,7 @@ namespace Database.Models
             Direction = Direction,
             Notes = Notes,
             CreatedAt = CreatedAt,
-            UserId = UserId,
+            ProjectId = ProjectId,
         };
     }
 }

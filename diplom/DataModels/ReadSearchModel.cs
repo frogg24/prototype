@@ -13,6 +13,6 @@ namespace DataModels
         public string? InstrumentModel { get; set; }
         public string? Notes { get; set; }
         public DateTime? CreatedAt { get; set; }
-        public int? UserId { get; set; }
+        public int? ProjectId { get; set; }
     }
 }

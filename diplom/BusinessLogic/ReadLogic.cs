@@ -18,7 +18,7 @@ namespace BusinessLogic
             _readStorage = readStorage;
         }
 
-        public async Task<List<ReadModel>> UploadReadsAsync(int? userId, IEnumerable<UploadReadFileModel> files)
+        public async Task<List<ReadModel>> UploadReadsAsync(int? projectId, IEnumerable<UploadReadFileModel> files)
         {
             var uploaded = new List<ReadModel>();
 
@@ -46,7 +46,7 @@ namespace BusinessLogic
                     Direction = DetectDirection(file.FileName),
                     Notes = $"ABIF {parsed.Version / 100.0:F2}, QV {parsed.QualityValues.Count}",
                     CreatedAt = DateTime.UtcNow,
-                    UserId = userId,
+                    ProjectId = projectId,
                 };
 
                 var created = await _readStorage.Insert(readModel);
@@ -59,9 +59,37 @@ namespace BusinessLogic
             return uploaded;
         }
 
-        public async Task<List<ReadModel>> GetUserReadsAsync(int userId)
+        public async Task<List<ReadModel>> GetProjectReadsAsync(int projectId)
         {
-            return await _readStorage.GetFilteredList(new ReadSearchModel { UserId = userId });
+            return await _readStorage.GetFilteredList(new ReadSearchModel { ProjectId = projectId });
+        }
+
+        public async Task<ReadModel?> ReadElement(ReadSearchModel model)
+        {
+            if (model == null)
+            {
+                throw new ArgumentNullException(nameof(model));
+            }
+
+            var element = await _readStorage.GetElement(model);
+
+            if (element == null)
+            {
+                return null;
+            }
+
+            return element;
+        }
+        public async Task<bool> Delete(int id)
+        {
+            var result = await _readStorage.Delete(id);
+
+            if (result == null)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         private static ReadDirectionEnum DetectDirection(string fileName)
