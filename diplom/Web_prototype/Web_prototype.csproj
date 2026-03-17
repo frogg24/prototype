@@ -20,4 +20,8 @@
     <ProjectReference Include="..\DataModels\DataModels.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="wwwroot\images\grib.jpg" />
+  </ItemGroup>
+
 </Project>

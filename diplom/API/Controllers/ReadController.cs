@@ -17,8 +17,6 @@ namespace API.Controllers
             _readLogic = readLogic;
         }
 
-        [HttpPost("upload")]
-        [AllowAnonymous]
         [HttpPost("project/{projectId:int}/upload")]
         public async Task<IActionResult> Upload(int projectId, [FromForm] List<IFormFile> files)
         {

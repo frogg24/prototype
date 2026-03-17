@@ -1,21 +1,69 @@
 ﻿@page
+@model Web_prototype.Pages.MyProjectsModel
 @{
     ViewData["Title"] = "My Projects";
     Layout = "_Layout";
 }
 
-<div class="row">
+<div class="row mt-4">
     <div class="col-md-12">
-        <div class="card">
+        <div class="card mb-4">
             <div class="card-header">
-                <h3>Мои сборки</h3>
+                <h3>Профиль</h3>
             </div>
             <div class="card-body">
-                
+                <form method="post" action="@Url.Page("/MyProjects", new { handler = "Create" })" class="row g-3">
+                    @Html.AntiForgeryToken()
 
-                <div class="mt-3">
-                    <a href="/Index" class="btn btn-primary">Новая сборка</a>
-                </div>
+                    <div class="col-md-8">
+                        <input type="text"
+                               name="NewProjectTitle"
+                               value="@Model.NewProjectTitle"
+                               class="form-control"
+                               placeholder="Название проекта" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-primary">Добавить проект</button>
+                    </div>
+                </form>
+
+                @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+                {
+                    <div class="alert alert-danger mt-3">@Model.ErrorMessage</div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
+                {
+                    <div class="alert alert-success mt-3">@Model.SuccessMessage</div>
+                }
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>Мои проекты</h3>
+            </div>
+            <div class="card-body">
+                @if (Model.Projects.Count == 0)
+                {
+                    <p class="text-muted mb-0">У вас пока нет проектов.</p>
+                }
+                else
+                {
+                    <ul class="list-group">
+                        @foreach (var project in Model.Projects.OrderByDescending(p => p.CreatedAt))
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>@project.Title</strong>
+                                    <div class="text-muted small">Создан: @project.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</div>
+                                </div>
+                                <a class="btn btn-outline-primary btn-sm" href="/Project/@project.Id">Открыть</a>
+                            </li>
+                        }
+                    </ul>
+                }
             </div>
         </div>
     </div>

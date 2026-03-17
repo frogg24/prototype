@@ -1,80 +1,9 @@
 ﻿@page
-@model Web_prototype.Pages.IndexModel
 @{
-    ViewData["Title"] = "Upload Reads";
+    ViewData["Title"] = "Home";
     Layout = "_Layout";
 }
 
-<div class="container-fluid mt-4">
-    <div class="card">
-        <div class="card-header">
-            <h3>Загрузить риды</h3>
-        </div>
-        <div class="card-body">
-            <p>Загрузите один или несколько файлов .ab1 (чтения Сэнгера) для выполнения сборки генома</p>
-
-            <form method="post" enctype="multipart/form-data">
-                @Html.AntiForgeryToken()
-                <div class="form-group mb-3">
-                    <label for="UploadedFiles">Выберите .ab1 файл:</label>
-                    <input type="file" class="form-control" id="UploadedFiles" name="UploadedFiles" accept=".ab1" multiple />
-                </div>
-                <button type="submit" class="btn btn-primary">Загрузить</button>
-            </form>
-
-            @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
-            {
-                <div class="alert alert-danger mt-3">@Model.ErrorMessage</div>
-            }
-
-            @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
-            {
-                <div class="alert alert-success mt-3">@Model.SuccessMessage</div>
-            }
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <h4>Сохраненные риды</h4>
-        </div>
-        <div class="card-body">
-            @if (Model.Reads.Count == 0)
-            {
-                <p class="text-muted mb-0">Пока нет загруженных ридов.</p>
-            }
-            else
-            {
-                <div class="table-responsive">
-                    <table class="table table-striped table-sm align-middle">
-                        <thead>
-                            <tr>
-                                <th>Файл</th>
-                                <th>Sample</th>
-                                <th>Instrument</th>
-                                <th>Длина</th>
-                                <th>Direction</th>
-                                <th>Последовательность</th>
-                                <th>Дата</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var read in Model.Reads.OrderByDescending(r => r.CreatedAt))
-                            {
-                                <tr>
-                                    <td>@read.FileName</td>
-                                    <td>@(read.SampleName ?? "-")</td>
-                                    <td>@(read.InstrumentModel ?? "-")</td>
-                                    <td>@read.SequenceLength</td>
-                                    <td>@read.Direction</td>
-                                    <td style="max-width: 420px; word-break: break-all;">@(read.Sequence.Length > 120 ? read.Sequence[..120] + "..." : read.Sequence)</td>
-                                    <td>@read.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
-        </div>
-    </div>
+<div>
+    <img src="~/images/grib.jpg" />
 </div>
