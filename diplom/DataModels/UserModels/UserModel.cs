@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace DataModels
+namespace DataModels.UserModels
 {
     public class UserModel
     {

@@ -1,5 +1,5 @@
 ﻿using Database.Implements;
-using DataModels;
+using DataModels.ProjectModels;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;

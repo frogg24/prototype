@@ -1,5 +1,5 @@
-﻿using DataModels;
-using DataModels.enums;
+﻿using DataModels.enums;
+using DataModels.ReadModels;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;

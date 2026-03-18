@@ -1,5 +1,6 @@
 ﻿using Database.Models;
-using DataModels;
+using DataModels.ProjectModels;
+using DataModels.UserModels;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;

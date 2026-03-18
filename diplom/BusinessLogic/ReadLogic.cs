@@ -1,6 +1,6 @@
 ﻿using Database.Implements;
-using DataModels;
 using DataModels.enums;
+using DataModels.ReadModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;

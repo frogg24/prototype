@@ -1,4 +1,4 @@
-using DataModels;
+using DataModels.UserModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Text;

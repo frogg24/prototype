@@ -1,4 +1,5 @@
-using DataModels;
+using DataModels.ProjectModels;
+using DataModels.ReadModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -100,7 +101,7 @@ namespace Web_prototype.Pages
             }
 
             var json = await response.Content.ReadAsStringAsync();
-            Project = JsonSerializer.Deserialize<DataModels.ProjectModel>(json, new JsonSerializerOptions
+            Project = JsonSerializer.Deserialize<ProjectModel>(json, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true,
             });

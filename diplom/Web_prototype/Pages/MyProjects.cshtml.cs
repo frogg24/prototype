@@ -1,4 +1,4 @@
-using DataModels;
+using DataModels.ProjectModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -46,7 +46,7 @@ namespace Web_prototype.Pages
                 return Page();
             }
 
-            var model = new DataModels.ProjectModel
+            var model = new DataModels.ProjectModels.ProjectModel
             {
                 UserId = userId,
                 Title = NewProjectTitle.Trim(),

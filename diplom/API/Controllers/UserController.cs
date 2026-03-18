@@ -1,5 +1,5 @@
 ﻿using BusinessLogic;
-using DataModels;
+using DataModels.UserModels;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers
