@@ -93,15 +93,15 @@ namespace Database.Implements
             return project.GetViewModel;
         }
 
-        public async Task<UserModel?> Delete(int id)
+        public async Task<ProjectModel?> Delete(int id)
         {
             using var context = new Database();
-            var project = await context.Users.FirstOrDefaultAsync(x => x.Id == id);
+            var project = await context.Projects.FirstOrDefaultAsync(x => x.Id == id);
             if (project == null)
             {
                 return null;
             }
-            context.Users.Remove(project);
+            context.Projects.Remove(project);
             await context.SaveChangesAsync();
             return project.GetViewModel;
         }
