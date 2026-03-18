@@ -20,7 +20,7 @@ namespace BusinessLogic
             _assemblyStorage = assemblyStorage;
         }
 
-        public async Task<AssemblyModel> MakeOLC(List<ReadModel> reads)
+        public async Task<AssemblyModel> MakeOLC(int projectId)
         {
             //TODO: make OLC
             return new AssemblyModel();

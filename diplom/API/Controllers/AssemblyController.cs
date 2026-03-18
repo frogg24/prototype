@@ -148,5 +148,33 @@ namespace API.Controllers
                 return StatusCode(500, new { message = ex.Message });
             }
         }
+
+        [HttpPost("project/{projectId:int}/run")]
+        public async Task<IActionResult> RunAssembly(int projectId)
+        {
+            try
+            {
+                var assembly = await _assemblyLogic.MakeOLC(projectId);
+
+                if (assembly == null)
+                {
+                    return BadRequest(new { message = "Не удалось выполнить сборку" });
+                }
+
+                return Ok(assembly);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
     }
 }

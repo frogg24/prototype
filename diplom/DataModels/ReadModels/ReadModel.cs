@@ -22,8 +22,8 @@ namespace DataModels.ReadModels
         [MaxLength(255)]
         public string? InstrumentModel { get; set; }
 
-        //[MaxLength(10)]
-        //public string? BaseOrder { get; set; }
+        [MaxLength(10)]
+        public string? BaseOrder { get; set; }
 
         [Required]
         public string Sequence { get; set; } = string.Empty;
@@ -33,11 +33,11 @@ namespace DataModels.ReadModels
         // Forward / Reverse / Unknown
         public ReadDirectionEnum Direction { get; set; } = ReadDirectionEnum.Unknown;
 
-        //// Если захочешь потом использовать quality values
-        //public string? QualityValuesJson { get; set; }
+        // Если захочешь потом использовать quality values
+        public string? QualityValuesJson { get; set; }
 
-        //// Если захочешь потом рисовать хроматограмму
-        //public string? TraceDataJson { get; set; }
+        // Если захочешь потом рисовать хроматограмму
+        public string? TraceDataJson { get; set; }
 
         //// Хранить ли сам исходный .ab1 в БД
         //public byte[]? RawFileContent { get; set; }

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace BusinessLogic
@@ -47,6 +48,9 @@ namespace BusinessLogic
                     Notes = $"ABIF {parsed.Version / 100.0:F2}, QV {parsed.QualityValues.Count}",
                     CreatedAt = DateTime.UtcNow,
                     ProjectId = projectId,
+                    BaseOrder  =  parsed.BaseOrder,
+                    QualityValuesJson = JsonSerializer.Serialize(parsed.QualityValues),
+                    TraceDataJson = JsonSerializer.Serialize(parsed.Traces),
                 };
 
                 var created = await _readStorage.Insert(readModel);

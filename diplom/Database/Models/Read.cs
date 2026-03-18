@@ -36,6 +36,10 @@ namespace Database.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public int? ProjectId { get; set; }
 
+        [MaxLength(10)]
+        public string? BaseOrder { get; set; }
+        public string? QualityValuesJson { get; set; }
+        public string? TraceDataJson { get; set; }
         public static Read? Create(ReadModel read)
         {
             if (read == null)
@@ -54,6 +58,9 @@ namespace Database.Models
                 Notes = read.Notes,
                 CreatedAt = read.CreatedAt,
                 ProjectId = read.ProjectId,
+                BaseOrder = read.BaseOrder,
+                QualityValuesJson = read.QualityValuesJson,
+                TraceDataJson = read.TraceDataJson,
             };
         }
 
@@ -72,6 +79,9 @@ namespace Database.Models
             Direction = read.Direction;
             Notes = read.Notes;
             ProjectId = read.ProjectId;
+            BaseOrder = read.BaseOrder;
+            QualityValuesJson = read.QualityValuesJson;
+            TraceDataJson = read.TraceDataJson;
         }
 
         public ReadModel GetViewModel => new()
@@ -86,6 +96,9 @@ namespace Database.Models
             Notes = Notes,
             CreatedAt = CreatedAt,
             ProjectId = ProjectId,
+            BaseOrder = BaseOrder,
+            QualityValuesJson = QualityValuesJson,
+            TraceDataJson = TraceDataJson,
         };
     }
 }
