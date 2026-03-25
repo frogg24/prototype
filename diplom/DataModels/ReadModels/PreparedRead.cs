@@ -11,8 +11,8 @@ namespace DataModels.ReadModels
         public int SourceId { get; set; }
         public string OriginalSequence { get; set; } = string.Empty;
         public string PreparedSequence { get; set; } = string.Empty;
-        public int[] OriginalQualities { get; set; }
-        public int[] PreparedQualities { get; set; }
+        public List<int> OriginalQualities { get; set; }
+        public List<int> PreparedQualities { get; set; }
         public bool WasReversed { get; set; }
         public int LeftTrim { get; set; }
         public int RightTrim { get; set; }
