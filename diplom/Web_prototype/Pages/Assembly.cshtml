@@ -1,4 +1,5 @@
-﻿@page
+﻿@page "{projectId:int}"
+@model Web_prototype.Pages.AssemblyModel
 @{
     ViewData["Title"] = "Assembly Results";
     Layout = "_Layout";
@@ -8,14 +9,49 @@
     <div class="col-md-12">
         <div class="card">
             <div class="card-header">
-                <h3>Сборки</h3>
+                <h3>Сборка проекта @Model.ProjectId</h3>
             </div>
             <div class="card-body">
+                @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+                {
+                    <div class="alert alert-warning">@Model.ErrorMessage</div>
+                }
+                else if (Model.Assembly != null)
+                {
+                    <div class="mb-3">
+                        <strong>Длина:</strong> @Model.Assembly.ConsensusLength
+                    </div>
 
-                <p>Результаты сборки будут отображаться здесь после подключения реальной обработки файлов.</p>
+                    <div class="mb-3">
+                        <strong>Создано:</strong> @Model.Assembly.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                    </div>
 
-                <div class="mt-4">
+                    @if (Model.Assembly.UpdatedAt.HasValue)
+                    {
+                        <div class="mb-3">
+                            <strong>Обновлено:</strong> @Model.Assembly.UpdatedAt.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <strong>ConsensusSequence:</strong>
+                        <div class="border rounded p-3 mt-2" style="word-break: break-all; font-family: monospace;">
+                            @Model.Assembly.ConsensusSequence
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(Model.Assembly.QualityValuesJson))
+                    {
+                        <details class="mt-3">
+                            <summary>Показать quality values</summary>
+                            <pre class="mt-2">@Model.Assembly.QualityValuesJson</pre>
+                        </details>
+                    }
+                }
+
+                <div class="mt-4 d-flex gap-2">
                     <a href="/MyProjects" class="btn btn-secondary">К моим проектам</a>
+                    <a href="/Project/@Model.ProjectId" class="btn btn-outline-primary">Назад в проект</a>
                 </div>
             </div>
         </div>

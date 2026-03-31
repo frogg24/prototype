@@ -123,5 +123,24 @@ namespace Web_prototype.Pages
                 PropertyNameCaseInsensitive = true,
             }) ?? new List<ReadModel>();
         }
+
+        public async Task<IActionResult> OnPostAssembleAsync(int id)
+        {
+            Id = id;
+
+            var client = _httpClientFactory.CreateClient("ApiClient");
+            var response = await client.PostAsync($"api/assembly/project/{Id}/run", null);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorText = await response.Content.ReadAsStringAsync();
+                ErrorMessage = $"Ошибка при сборке: {errorText}";
+                await LoadProjectAsync();
+                await LoadReadsAsync();
+                return Page();
+            }
+
+            return RedirectToPage("/Assembly", new { projectId = Id });
+        }
     }
 }

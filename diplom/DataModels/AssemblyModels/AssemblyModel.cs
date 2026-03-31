@@ -16,10 +16,8 @@ namespace DataModels.AssemblyModels
         public string ConsensusSequence { get; set; } = string.Empty;
         [Required]
         public int ConsensusLength { get; set; }
-
-        //public string? LowConfidenceRegionsJson { get; set; }
-        //public string? ParametersJson { get; set; }
-        //public string? MetricsJson { get; set; }
+        public string? QualityValuesJson { get; set; }
+        public string? TraceDataJson { get; set; }
         [Required]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }

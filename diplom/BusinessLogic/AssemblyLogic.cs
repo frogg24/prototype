@@ -14,16 +14,57 @@ namespace BusinessLogic
     public class AssemblyLogic
     {
         private readonly AssemblyStorage _assemblyStorage;
+        private readonly AlgorithmOLC _algorithmOLC;
 
-        public AssemblyLogic(AssemblyStorage assemblyStorage)
+        public AssemblyLogic(AssemblyStorage assemblyStorage, AlgorithmOLC algorithmOLC)
         {
             _assemblyStorage = assemblyStorage;
+            _algorithmOLC=algorithmOLC;
         }
 
         public async Task<AssemblyModel> MakeOLC(int projectId)
         {
-            //TODO: make OLC
-            return new AssemblyModel();
+            if (projectId <= 0)
+            {
+                throw new ArgumentException("Некорректный ID проекта");
+            }
+            AssemblyModel assembly = await _algorithmOLC.OLC(projectId);
+
+            if (string.IsNullOrWhiteSpace(assembly.ConsensusSequence))
+            {
+                throw new InvalidOperationException("Алгоритм не вернул консенсусную последовательность");
+            }
+
+            assembly.ProjectId = projectId;
+            assembly.ConsensusLength = assembly.ConsensusSequence.Length;
+            assembly.UpdatedAt = DateTime.UtcNow;
+
+            var existing = await _assemblyStorage.GetElement(new AssemblySearchModel
+            {
+                ProjectId = projectId
+            });
+
+            if (existing == null)
+            {
+                assembly.CreatedAt = DateTime.UtcNow;
+                var created = await _assemblyStorage.Insert(assembly);
+                if (created == null)
+                    throw new InvalidOperationException("Не удалось сохранить сборку");
+
+                return created;
+            }
+
+            existing.ConsensusSequence = assembly.ConsensusSequence;
+            existing.ConsensusLength = assembly.ConsensusLength;
+            existing.QualityValuesJson = assembly.QualityValuesJson;
+            existing.TraceDataJson = assembly.TraceDataJson;
+            existing.UpdatedAt = DateTime.UtcNow;
+
+            var updated = await _assemblyStorage.Update(existing);
+            if (updated == null)
+                throw new InvalidOperationException("Не удалось обновить сборку");
+
+            return updated;
         }
         public async Task<List<AssemblyModel>> GetProjectAssemblysAsync(int projectId)
         {

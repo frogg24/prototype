@@ -18,6 +18,8 @@ namespace Database.Models
         public string ConsensusSequence { get; private set; } = string.Empty;
         [Required]
         public int ConsensusLength { get; private set; }
+        public string? QualityValuesJson { get; set; }
+        public string? TraceDataJson { get; set; }
         [Required]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
@@ -34,6 +36,8 @@ namespace Database.Models
                 ProjectId = assembly.ProjectId,
                 ConsensusSequence = assembly.ConsensusSequence,
                 ConsensusLength = assembly.ConsensusSequence.Length,
+                QualityValuesJson = assembly.QualityValuesJson,
+                TraceDataJson = assembly.TraceDataJson,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = null
             };
@@ -49,6 +53,8 @@ namespace Database.Models
             ProjectId = assembly.ProjectId;
             ConsensusSequence = assembly.ConsensusSequence;
             ConsensusLength = assembly.ConsensusSequence.Length;
+            QualityValuesJson = assembly.QualityValuesJson;
+            TraceDataJson = assembly.TraceDataJson;
             UpdatedAt = assembly.UpdatedAt; 
         }
 
@@ -58,6 +64,8 @@ namespace Database.Models
             ProjectId = ProjectId,
             ConsensusSequence = ConsensusSequence,
             ConsensusLength = ConsensusLength,
+            QualityValuesJson = QualityValuesJson,
+            TraceDataJson = TraceDataJson,
             CreatedAt = CreatedAt,
             UpdatedAt = UpdatedAt,
         };

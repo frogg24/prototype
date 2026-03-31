@@ -13,6 +13,16 @@
         </div>
         <div class="card-body">
             <a href="/MyProjects" class="btn btn-outline-secondary btn-sm">← К проектам</a>
+
+            <form method="post" action="@Url.Page("/Project", new { id = Model.Id, handler = "Assemble" })">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button type="submit" class="btn btn-success btn-sm">Запустить сборку</button>
+            </form>
+
+            <a href="@Url.Page("/Assembly", new { projectId = Model.Id })" class="btn btn-outline-primary btn-sm">
+                Открыть результат
+            </a>
         </div>
     </div>
 

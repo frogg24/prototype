@@ -14,10 +14,13 @@ builder.Services.AddScoped<UserStorage>();
 builder.Services.AddScoped<ReadStorage>();
 builder.Services.AddScoped<ProjectStorage>();
 builder.Services.AddScoped<AssemblyStorage>();
+
 builder.Services.AddScoped<UserLogic>();
 builder.Services.AddScoped<ReadLogic>();
 builder.Services.AddScoped<ProjectLogic>();
 builder.Services.AddScoped<AssemblyLogic>();
+
+builder.Services.AddScoped<AlgorithmOLC>();
 
 var app = builder.Build();
 

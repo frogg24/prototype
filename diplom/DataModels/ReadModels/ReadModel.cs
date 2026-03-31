@@ -29,14 +29,8 @@ namespace DataModels.ReadModels
         public string Sequence { get; set; } = string.Empty;
 
         public int SequenceLength { get; set; }
-
-        // Forward / Reverse / Unknown
         public ReadDirectionEnum Direction { get; set; } = ReadDirectionEnum.Unknown;
-
-        // Если захочешь потом использовать quality values
         public string? QualityValuesJson { get; set; }
-
-        // Если захочешь потом рисовать хроматограмму
         public string? TraceDataJson { get; set; }
 
         //// Хранить ли сам исходный .ab1 в БД
