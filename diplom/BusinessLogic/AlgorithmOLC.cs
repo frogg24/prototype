@@ -101,179 +101,114 @@ namespace BusinessLogic
             return (double)sum / window;
         }
 
-        private (double matchrate, int overlapLen, int score) FindOverlap(PreparedRead leftRead, PreparedRead rightRead, int MinOverlap = 20, double minMatchRate = 0.3)
+        private OverlapInfo FindOverlap(string leftSeq, string rightSeq, int minOverlap = 20, double minMatchRate = 0.6)
         {
-            if (leftRead.PreparedSequence.Length < MinOverlap || rightRead.PreparedSequence.Length < MinOverlap)
+            if (leftSeq.Length < minOverlap || rightSeq.Length < minOverlap)
             {
-                Console.WriteLine("Маленькая длина цепочки");
-                return (0, 0, 0);
+                return new OverlapInfo();
             }
 
-            string leftReadSeq = leftRead.PreparedSequence;
-            string rightReadSeq = rightRead.PreparedSequence;
-            int max = Math.Min(leftReadSeq.Length, rightReadSeq.Length);
+            int max = Math.Min(leftSeq.Length, rightSeq.Length);
 
-            int trueLen = 0;
-            double trueRate = 0.0;
-            int trueSrore = 0;
-
-
-            for (int len = max; len >= MinOverlap; len--)
+            OverlapInfo best = new OverlapInfo
             {
-                int leftStart = leftReadSeq.Length - len;
+                MatchRate = 0,
+                OverlapLen = 0,
+                Score = int.MinValue
+            };
 
+            for (int len = max; len >= minOverlap; len--)
+            {
+                int leftStart = leftSeq.Length - len;
                 int matches = 0;
                 int score = 0;
 
                 for (int i = 0; i < len; i++)
                 {
-                    char a = leftReadSeq[leftStart + i];
-                    char b = rightReadSeq[i];
+                    char a = leftSeq[leftStart + i];
+                    char b = rightSeq[i];
 
                     if (a == b)
                     {
                         matches++;
-                        score += 1;
+                        score++;
                     }
                     else
                     {
-                        //закоментил, чтобы некоторые неудачные варианты выводились
-                        //score -= 1;
+                        score--;
                     }
-
                 }
-                double matchRate = (double)matches / len;
-                
 
-                if (matchRate >= minMatchRate)
+                double rate = (double)matches / len;
+
+                if (rate >= minMatchRate)
                 {
-                    if (score > trueSrore || (score == trueSrore && len > trueLen))
+                    if (score > best.Score || (score == best.Score && len > best.OverlapLen))
                     {
-                        Console.WriteLine($"обновление мачрейта при len = {len}, новый мачрейт = {matchRate}");
-                        trueLen = len;
-                        trueRate = matchRate;
-                        trueSrore = score;
+                        best.Score = score;
+                        best.OverlapLen = len;
+                        best.MatchRate = rate;
                     }
                 }
             }
-            Console.WriteLine("Поиск перекорытия дошел до конца");
-            return (trueRate, trueLen, trueSrore);
+
+            if (best.Score == int.MinValue)
+            {
+                return new OverlapInfo();
+            }
+
+            return best;
         }
 
         public async Task<AssemblyModel> OLC(int projectId)
         {
-            List<ReadModel> reads = await _readStorage.GetFilteredList(new ReadSearchModel { ProjectId =  projectId });
+            List<ReadModel> reads = await _readStorage.GetFilteredList(new ReadSearchModel
+            {
+                ProjectId = projectId
+            });
+
             PrepareReads(reads);
-            if (preparedReads.Count  <=1)
+
+            if (preparedReads.Count <= 1)
             {
                 throw new Exception("not enough reads for OLC");
             }
 
-            //частный случай для двух ридов
-            if (preparedReads.Count == 2)
+            if (preparedReads.Count > 4)
             {
-                List<PairCandidate> candidates = BuildCandidates();
-                PairCandidate best = PickBestCandidate(candidates);
-                AssemblyModel assembly = BuildAssemblyFromCandidate(projectId, best);
-                TrimByQ(assembly);
-                assembly.ConsensusLength = assembly.ConsensusSequence.Length;
-                assembly.UpdatedAt = DateTime.UtcNow;
-
-                return assembly;
+                throw new Exception("current algorithm supports up to 4 reads");
             }
-            else
+
+            AssemblyCandidate? best = BuildBestCandidate(preparedReads);
+
+            if (best == null)
             {
-                //in work
-                return new AssemblyModel();
+                throw new Exception("no valid assembly candidate found");
             }
-        }
 
-        private List<PairCandidate> BuildCandidates()
-        {
-            PreparedRead read1 = preparedReads[0];
-            PreparedRead read2 = preparedReads[1];
-
-            PreparedRead reversed2 = new PreparedRead
+            AssemblyModel assembly = new AssemblyModel
             {
-                SourceId = read2.SourceId,
-                OriginalSequence = read2.OriginalSequence,
-                OriginalQualities = new List<int>(read2.OriginalQualities),
-                WasReversed = true,
-                PreparedSequence = ReverseRead(read2.PreparedSequence),
-                PreparedQualities = ReverseQualities(new List<int>(read2.PreparedQualities)),
-                LeftTrim = read2.LeftTrim,
-                RightTrim = read2.RightTrim
+                ProjectId = projectId,
+                ConsensusSequence = best.Sequence,
+                ConsensusLength = best.Sequence.Length,
+                QualityValuesJson = JsonSerializer.Serialize(best.Qualities),
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
             };
-            Console.WriteLine("==================ПОПЫТКА1=====================");
-            var f1f2 = FindOverlap(read1, read2);
-            Console.WriteLine($"f1f2: len={f1f2.overlapLen}, rate={f1f2.matchrate:F3}, score={f1f2.score}");
 
-            Console.WriteLine("==================ПОПЫТКА2=====================");
-            var f1r2 = FindOverlap(read1, reversed2);
-            Console.WriteLine($"f1r2: len={f1r2.overlapLen}, rate={f1r2.matchrate:F3}, score={f1r2.score}");
+            TrimByQ(assembly);
+            assembly.UpdatedAt = DateTime.UtcNow;
 
-            Console.WriteLine("==================ПОПЫТКА3=====================");
-            var f2f1 = FindOverlap(read2, read1);
-            Console.WriteLine($"f2f1: len={f2f1.overlapLen}, rate={f2f1.matchrate:F3}, score={f2f1.score}");
+            Console.WriteLine("BEST PATH: " + string.Join(" -> ", best.Path));
+            Console.WriteLine($"TOTAL SCORE: {best.TotalScore}");
+            Console.WriteLine($"TOTAL OVERLAP: {best.TotalOverlap}");
+            Console.WriteLine($"MIN RATE: {best.MinRate:F3}");
+            Console.WriteLine($"CONSENSUS LEN: {assembly.ConsensusLength}");
 
-            Console.WriteLine("==================ПОПЫТКА4=====================");
-            var r2f1 = FindOverlap(reversed2, read1);
-            Console.WriteLine($"r2f1: len={r2f1.overlapLen}, rate={r2f1.matchrate:F3}, score={r2f1.score}");
-
-            return new List<PairCandidate>{
-                new PairCandidate
-                {
-                    Name = "f1f2",
-                    LeftRead = read1,
-                    RightRead = read2,
-                    RightWasReversed = false,
-                    MatchRate = f1f2.matchrate,
-                    OverlapLen = f1f2.overlapLen,
-                    Score = f1f2.score
-                },
-                new PairCandidate
-                {
-                    Name = "f1r2",
-                    LeftRead = read1,
-                    RightRead = reversed2,
-                    RightWasReversed = true,
-                    MatchRate = f1r2.matchrate,
-                    OverlapLen = f1r2.overlapLen,
-                    Score = f1r2.score
-                },
-                new PairCandidate
-                {
-                    Name = "f2f1",
-                    LeftRead = read2,
-                    RightRead = read1,
-                    RightWasReversed = false,
-                    MatchRate = f2f1.matchrate,
-                    OverlapLen = f2f1.overlapLen,
-                    Score = f2f1.score
-                },
-                new PairCandidate
-                {
-                    Name = "r2f1",
-                    LeftRead = reversed2,
-                    RightRead = read1,
-                    RightWasReversed = false,
-                    MatchRate = r2f1.matchrate,
-                    OverlapLen = r2f1.overlapLen,
-                    Score = r2f1.score
-                }
-            };
-        }
-
-        private PairCandidate PickBestCandidate(List<PairCandidate> candidates)
-        {
-            return candidates.OrderByDescending(c => c.Score).ThenByDescending(c => c.OverlapLen).ThenByDescending(c => c.MatchRate).First();
+            return assembly;
         }
         private string ReverseRead(string seq)
         {
-            //char[] result = seq.ToCharArray();
-            //Array.Reverse(result);
-            //return new string(result);
-
             char Complement(char c) => c switch
             {
                 'A' => 'T',
@@ -312,28 +247,65 @@ namespace BusinessLogic
             return result.ToList();
         }
 
-        private AssemblyModel BuildAssemblyFromCandidate(int projectId, PairCandidate candidate)
+        private PreparedRead CloneRead(PreparedRead read)
         {
-            string leftSeq = candidate.LeftRead.PreparedSequence;
-            string rightSeq = candidate.RightRead.PreparedSequence;
+            return new PreparedRead
+            {
+                SourceId = read.SourceId,
+                OriginalSequence = read.OriginalSequence,
+                OriginalQualities = new List<int>(read.OriginalQualities),
+                WasReversed = read.WasReversed,
+                PreparedSequence = read.PreparedSequence,
+                PreparedQualities = new List<int>(read.PreparedQualities),
+                LeftTrim = read.LeftTrim,
+                RightTrim = read.RightTrim
+            };
+        }
+        private PreparedRead MakeReversedCopy(PreparedRead read)
+        {
+            PreparedRead copy = CloneRead(read);
+            copy.WasReversed = !copy.WasReversed;
+            copy.PreparedSequence = ReverseRead(copy.PreparedSequence);
+            copy.PreparedQualities = ReverseQualities(copy.PreparedQualities);
+            return copy;
+        }
 
-            List<int> leftQ = candidate.LeftRead.PreparedQualities;
-            List<int> rightQ = candidate.RightRead.PreparedQualities;
+        private AssemblyCandidate CreateSeedCandidate(PreparedRead read)
+        {
+            return new AssemblyCandidate
+            {
+                Sequence = read.PreparedSequence,
+                Qualities = new List<int>(read.PreparedQualities),
+                Path = new List<string>
+        {
+            $"{read.SourceId}:{(read.WasReversed ? "R" : "F")}"
+        },
+                Overlaps = new List<OverlapInfo>()
+            };
+        }
 
-            int overlapLen = candidate.OverlapLen;
+        private AssemblyCandidate MergeCandidate(AssemblyCandidate leftContig, PreparedRead rightRead, OverlapInfo overlap)
+        {
+            string leftSeq = leftContig.Sequence;
+            string rightSeq = rightRead.PreparedSequence;
+
+            List<int> leftQ = leftContig.Qualities;
+            List<int> rightQ = rightRead.PreparedQualities;
+
+            int overlapLen = overlap.OverlapLen;
             int leftUniqueLen = leftSeq.Length - overlapLen;
 
-            StringBuilder consensus = new StringBuilder();
-            List<int> consensusQ = new List<int>();
+            StringBuilder merged = new StringBuilder();
+            List<int> mergedQ = new List<int>();
 
-            //левая уникальная часть
+            // левая уникальная часть
             for (int i = 0; i < leftUniqueLen; i++)
             {
-                consensus.Append(leftSeq[i]);
-                consensusQ.Add(leftQ[i]);
+                merged.Append(leftSeq[i]);
+                mergedQ.Add(leftQ[i]);
             }
 
-            //перекрытие
+            // overlap
             for (int i = 0; i < overlapLen; i++)
             {
                 char a = leftSeq[leftUniqueLen + i];
@@ -344,41 +316,155 @@ namespace BusinessLogic
 
                 if (a == b)
                 {
-                    consensus.Append(a);
-                    consensusQ.Add(Math.Max(qa, qb));
+                    merged.Append(a);
+                    mergedQ.Add(Math.Max(qa, qb));
                 }
                 else
                 {
                     if (qa >= qb)
                     {
-                        consensus.Append(a);
-                        consensusQ.Add(qa);
+                        merged.Append(a);
+                        mergedQ.Add(qa);
                     }
                     else
                     {
-                        consensus.Append(b);
-                        consensusQ.Add(qb);
+                        merged.Append(b);
+                        mergedQ.Add(qb);
                     }
                 }
             }
 
-            //правая уникальная часть
+            // правая уникальная часть
             for (int i = overlapLen; i < rightSeq.Length; i++)
             {
-                consensus.Append(rightSeq[i]);
-                consensusQ.Add(rightQ[i]);
+                merged.Append(rightSeq[i]);
+                mergedQ.Add(rightQ[i]);
             }
 
-            AssemblyModel assembly = new AssemblyModel
+            return new AssemblyCandidate
             {
-                ProjectId = projectId,
-                ConsensusSequence = consensus.ToString(),
-                ConsensusLength = consensus.Length,
-                QualityValuesJson = JsonSerializer.Serialize(consensusQ),
-                CreatedAt = DateTime.UtcNow
+                Sequence = merged.ToString(),
+                Qualities = mergedQ,
+                Path = new List<string>(leftContig.Path){
+                    $"{rightRead.SourceId}:{(rightRead.WasReversed ? "R" : "F")}"
+                },
+                Overlaps = new List<OverlapInfo>(leftContig.Overlaps)
+                {
+                    overlap
+                }
             };
+        }
 
-            return assembly;
+        private bool IsBetterCandidate(AssemblyCandidate current, AssemblyCandidate? best)
+        {
+            if (best == null)
+                return true;
+
+            if (current.TotalScore != best.TotalScore)
+                return current.TotalScore > best.TotalScore;
+
+            if (current.TotalOverlap != best.TotalOverlap)
+                return current.TotalOverlap > best.TotalOverlap;
+
+            if (Math.Abs(current.MinRate - best.MinRate) > 0.000001)
+                return current.MinRate > best.MinRate;
+
+            return current.Sequence.Length > best.Sequence.Length;
+        }
+
+
+        private IEnumerable<List<T>> GetReadsCombination<T>(List<T> items)
+        {
+            if (items.Count == 1)
+            {
+                yield return new List<T>(items);
+                yield break;
+            }
+
+            for (int i = 0; i < items.Count; i++)
+            {
+                T current = items[i];
+                List<T> rest = new List<T>(items);
+                rest.RemoveAt(i);
+
+                foreach (var perm in GetReadsCombination(rest))
+                {
+                    List<T> result = new List<T> { current };
+                    result.AddRange(perm);
+                    yield return result;
+                }
+            }
+        }
+
+        private IEnumerable<List<PreparedRead>> GetOrientationVariants(List<PreparedRead> reads)
+        {
+            if (reads.Count == 0)
+            {
+                yield return new List<PreparedRead>();
+                yield break;
+            }
+
+            PreparedRead first = reads[0];
+            List<PreparedRead> rest = reads.Skip(1).ToList();
+
+            foreach (var restVariant in GetOrientationVariants(rest))
+            {
+                // вариант 1: первый рид как есть
+                List<PreparedRead> directVariant = new List<PreparedRead>
+                {
+                    CloneRead(first)
+                };
+                directVariant.AddRange(restVariant.Select(CloneRead));
+                yield return directVariant;
+
+                // вариант 2: первый рид развернутый
+                List<PreparedRead> reversedVariant = new List<PreparedRead>
+                {
+                    MakeReversedCopy(first)
+                };
+                reversedVariant.AddRange(restVariant.Select(CloneRead));
+                yield return reversedVariant;
+            }
+        }
+
+        private AssemblyCandidate? BuildBestCandidate(List<PreparedRead> reads)
+        {
+            AssemblyCandidate? best = null;
+
+            foreach (var combination in GetReadsCombination(reads))
+            {
+                foreach (var orientedReads in GetOrientationVariants(combination))
+                {
+                    AssemblyCandidate candidate = CreateSeedCandidate(orientedReads[0]);
+                    bool failed = false;
+
+                    Console.WriteLine($"попытка собрать:");
+                    foreach (var read in orientedReads){
+                        Console.WriteLine($"ID: {read.SourceId}, Was reversed: {read.WasReversed}");
+                    }
+                    Console.WriteLine($"=============");
+
+                    for (int i = 1; i < orientedReads.Count; i++)
+                    {
+                        OverlapInfo overlap = FindOverlap(candidate.Sequence, orientedReads[i].PreparedSequence);
+
+                        if (overlap.OverlapLen == 0)
+                        {
+                            failed = true;
+                            break;
+                        }
+
+                        candidate = MergeCandidate(candidate, orientedReads[i], overlap);
+                    }
+
+                    if (!failed && IsBetterCandidate(candidate, best))
+                    {
+                        best = candidate;
+                    }
+                }
+            }
+
+            return best;
         }
     }
 }
