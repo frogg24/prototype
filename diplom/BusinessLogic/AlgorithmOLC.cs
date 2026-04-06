@@ -276,10 +276,9 @@ namespace BusinessLogic
             {
                 Sequence = read.PreparedSequence,
                 Qualities = new List<int>(read.PreparedQualities),
-                Path = new List<string>
-        {
-            $"{read.SourceId}:{(read.WasReversed ? "R" : "F")}"
-        },
+                Path = new List<string>{
+                    $"{read.SourceId}:{(read.WasReversed ? "R" : "F")}"
+                },
                 Overlaps = new List<OverlapInfo>()
             };
         }
