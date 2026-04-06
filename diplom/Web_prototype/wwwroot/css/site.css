@@ -684,3 +684,237 @@ hr {
         font-size: 1.1rem;
     }
 }
+
+.assembly-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.assembly-viewer-card {
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.assembly-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e9ecef;
+    background: #f8f9fa;
+}
+
+    .assembly-toolbar .zoom-group,
+    .assembly-toolbar .highlight-group {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .assembly-toolbar button {
+        border: 1px solid #ced4da;
+        background: #fff;
+        border-radius: 8px;
+        padding: 4px 10px;
+        font-size: 0.9rem;
+    }
+
+        .assembly-toolbar button.active {
+            background: #0d6efd;
+            border-color: #0d6efd;
+            color: #fff;
+        }
+
+    .assembly-toolbar input[type="range"] {
+        width: 180px;
+    }
+
+.assembly-scroll {
+    overflow-x: auto;
+    overflow-y: visible;
+    padding: 16px;
+    background: #fcfcfd;
+}
+
+.assembly-content {
+    --base-width: 12px;
+    min-width: fit-content;
+}
+
+.lane-block {
+    margin-bottom: 18px;
+    border: 1px solid #edf0f2;
+    border-radius: 10px;
+    background: #fff;
+}
+
+.lane-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: baseline;
+    padding: 10px 12px;
+    border-bottom: 1px solid #f1f3f5;
+    background: #fbfcfe;
+}
+
+.lane-title {
+    font-weight: 600;
+}
+
+.lane-meta {
+    color: #6c757d;
+    font-size: 0.9rem;
+    text-align: right;
+}
+
+.lane-canvas {
+    position: relative;
+    min-height: 32px;
+    background-image: linear-gradient(to right, rgba(0, 0, 0, 0.035) 1px, transparent 1px);
+    background-size: calc(var(--base-width) * 10) 100%;
+}
+
+    .lane-canvas.consensus {
+        position: sticky;
+        left: 0;
+        z-index: 2;
+        background-color: #fffef7;
+    }
+
+.ruler-track {
+    position: relative;
+    height: 32px;
+}
+
+.ruler-tick {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: #ced4da;
+}
+
+.ruler-label {
+    position: absolute;
+    top: 4px;
+    transform: translateX(4px);
+    font-size: 11px;
+    color: #6c757d;
+    font-family: monospace;
+}
+
+.placed-sequence,
+.placed-chromatogram {
+    position: absolute;
+    top: 0;
+}
+
+.placed-sequence {
+    height: 32px;
+}
+
+.sequence-row {
+    display: inline-flex;
+    height: 32px;
+    align-items: center;
+    font-family: monospace;
+    white-space: nowrap;
+}
+
+.base-char {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--base-width);
+    min-width: var(--base-width);
+    height: 32px;
+    font-size: 13px;
+    font-weight: 600;
+    user-select: none;
+}
+
+.base-A {
+    color: #2e8b57;
+}
+
+.base-C {
+    color: #1f77b4;
+}
+
+.base-G {
+    color: #222;
+}
+
+.base-T {
+    color: #d62728;
+}
+
+.base-N {
+    color: #6c757d;
+}
+
+.base-dim {
+    opacity: 0.18;
+}
+
+.chrom-wrapper {
+    position: relative;
+    height: 128px;
+}
+
+.chrom-svg {
+    display: block;
+    overflow: visible;
+}
+
+.trace-labels {
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    display: flex;
+    gap: 6px;
+    font-size: 11px;
+    font-family: monospace;
+    background: rgba(255,255,255,0.85);
+    padding: 2px 6px;
+    border-radius: 999px;
+    border: 1px solid #e9ecef;
+}
+
+    .trace-labels span[data-base="A"] {
+        color: #2e8b57;
+    }
+
+    .trace-labels span[data-base="C"] {
+        color: #1f77b4;
+    }
+
+    .trace-labels span[data-base="G"] {
+        color: #222;
+    }
+
+    .trace-labels span[data-base="T"] {
+        color: #d62728;
+    }
+
+.summary-sequence {
+    word-break: break-all;
+    font-family: monospace;
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    padding: 12px;
+}
+
+.assembly-toolbar .peak-group {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+}

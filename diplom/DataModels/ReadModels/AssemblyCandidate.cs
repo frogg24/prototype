@@ -14,6 +14,8 @@ namespace DataModels.ReadModels
         public List<string> Path { get; set; } = new();
         public List<OverlapInfo> Overlaps { get; set; } = new();
 
+        public List<ReadPlacementModel> Placements { get; set; } = new();
+
         public int TotalScore => Overlaps.Sum(o => o.Score);
         public int TotalOverlap => Overlaps.Sum(o => o.OverlapLen);
         public double MinRate => Overlaps.Count == 0 ? 0 : Overlaps.Min(o => o.MatchRate);
