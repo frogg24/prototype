@@ -133,6 +133,7 @@ namespace Web_prototype.Pages
             {
                 ConsensusSequence = assembly.ConsensusSequence ?? string.Empty,
                 ConsensusLength = assembly.ConsensusLength,
+                ConsensusQualities = ParseQualityArray(assembly.QualityValuesJson),
                 Tracks = tracks
             };
 
@@ -337,10 +338,28 @@ namespace Web_prototype.Pages
             return result;
         }
 
+        private static int[] ParseQualityArray(string? json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return Array.Empty<int>();
+            }
+
+            try
+            {
+                return JsonSerializer.Deserialize<int[]>(json, ApiJsonOptions) ?? Array.Empty<int>();
+            }
+            catch
+            {
+                return Array.Empty<int>();
+            }
+        }
+
         private sealed class ViewerDto
         {
             public string ConsensusSequence { get; set; } = string.Empty;
             public int ConsensusLength { get; set; }
+            public int[] ConsensusQualities { get; set; } = Array.Empty<int>();
             public List<ViewerTrackDto> Tracks { get; set; } = new();
         }
 

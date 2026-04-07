@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "Assembly Results";
     Layout = "_Layout";
+    ViewData["FullWidth"] = true;
 }
 
 <div class="assembly-shell">
@@ -65,6 +66,14 @@
                             <button type="button" id="resetPeaksBtn">Reset peaks</button>
                             <span id="peakScaleValue">1.0x</span>
                         </div>
+
+                        <div class="quality-group">
+                            <strong>Качество consensus:</strong>
+                            <button type="button" id="toggleLowQualityBtn" class="active">Показать low-Q</button>
+                            <label for="lowQualityThreshold" class="mb-0">Порог</label>
+                            <input type="range" id="lowQualityThreshold" min="5" max="40" step="1" value="20" />
+                            <span id="lowQualityThresholdValue">Q20</span>
+                        </div>
                     </div>
 
                     <div class="assembly-scroll" id="assemblyScroll">
@@ -105,6 +114,10 @@
         const resetPeaksBtn = document.getElementById("resetPeaksBtn");
         const peakScaleValue = document.getElementById("peakScaleValue");
 
+        const toggleLowQualityBtn = document.getElementById("toggleLowQualityBtn");
+        const lowQualityThreshold = document.getElementById("lowQualityThreshold");
+        const lowQualityThresholdValue = document.getElementById("lowQualityThresholdValue");
+
         const baseColors = {
             A: "#2e8b57",
             C: "#1f77b4",
@@ -116,6 +129,8 @@
         let baseWidth = Number(zoomRange.value);
         let highlightedBase = "";
         let peakScale = 1.0;
+        let showLowQuality = true;
+        let consensusLowQThreshold = Number(lowQualityThreshold.value);
 
         function setPeakScale(nextValue) {
             peakScale = Math.max(0.25, Math.min(4.0, Number(nextValue)));
@@ -143,17 +158,36 @@
             renderViewer();
         }
 
-        function createBaseRow(sequence) {
+        function createBaseRow(sequence, qualities = null, options = {}) {
             const row = document.createElement("div");
             row.className = "sequence-row";
 
-            for (const ch of sequence) {
+            const useLowQuality = !!options.useLowQuality;
+
+            for (let i = 0; i < sequence.length; i++) {
+                const ch = sequence[i];
                 const base = normalizeBase(ch);
                 const span = document.createElement("span");
                 span.className = `base-char base-${base}`;
+
                 if (highlightedBase && base !== highlightedBase) {
                     span.classList.add("base-dim");
                 }
+
+                if (useLowQuality && showLowQuality && qualities && i < qualities.length) {
+                    const q = Number(qualities[i]);
+
+                    if (q < consensusLowQThreshold) {
+                        span.classList.add("low-quality-base");
+                    }
+
+                    if (q < Math.max(5, consensusLowQThreshold - 8)) {
+                        span.classList.add("very-low-quality-base");
+                    }
+
+                    span.title = `Base: ${ch}, Q: ${q}`;
+                }
+
                 span.textContent = ch;
                 row.appendChild(span);
             }
@@ -213,7 +247,13 @@
             const lane = document.createElement("div");
             lane.className = "lane-canvas consensus";
             lane.style.width = `${totalWidth}px`;
-            lane.appendChild(createBaseRow(viewerData.consensusSequence));
+            lane.appendChild(
+                createBaseRow(
+                    viewerData.consensusSequence,
+                    viewerData.consensusQualities || [],
+                    { useLowQuality: true }
+                )
+            );
             return lane;
         }
 
@@ -367,6 +407,16 @@
             }
         }
 
+        function animateButtonPress(button) {
+            if (!button) {
+                return;
+            }
+
+            button.classList.remove("button-pop");
+            void button.offsetWidth;
+            button.classList.add("button-pop");
+        }
+
         zoomRange.addEventListener("input", (e) => setZoom(e.target.value));
         zoomOutBtn.addEventListener("click", () => setZoom(baseWidth - 1));
         zoomInBtn.addEventListener("click", () => setZoom(baseWidth + 1));
@@ -375,9 +425,35 @@
             btn.addEventListener("click", () => setHighlight(btn.dataset.base || ""));
         });
 
-        smallerPeaksBtn.addEventListener("click", () => setPeakScale(peakScale - 0.25));
-        biggerPeaksBtn.addEventListener("click", () => setPeakScale(peakScale + 0.25));
-        resetPeaksBtn.addEventListener("click", () => setPeakScale(1.0));
+        smallerPeaksBtn.addEventListener("click", () => {
+            animateButtonPress(smallerPeaksBtn);
+            setPeakScale(peakScale - 0.25);
+        });
+
+        biggerPeaksBtn.addEventListener("click", () => {
+            animateButtonPress(biggerPeaksBtn);
+            setPeakScale(peakScale + 0.25);
+        });
+
+        resetPeaksBtn.addEventListener("click", () => {
+            animateButtonPress(resetPeaksBtn);
+            setPeakScale(1.0);
+        });
+
+        toggleLowQualityBtn.addEventListener("click", () => {
+            showLowQuality = !showLowQuality;
+            toggleLowQualityBtn.classList.toggle("active", showLowQuality);
+            renderViewer();
+        });
+
+        lowQualityThreshold.addEventListener("input", (e) => {
+            consensusLowQThreshold = Number(e.target.value);
+            lowQualityThresholdValue.textContent = `Q${consensusLowQThreshold}`;
+            renderViewer();
+        });
+
+        lowQualityThresholdValue.textContent = `Q${consensusLowQThreshold}`;
+        toggleLowQualityBtn.classList.toggle("active", showLowQuality);
 
         peakScaleValue.textContent = `${peakScale.toFixed(1)}x`;
 
