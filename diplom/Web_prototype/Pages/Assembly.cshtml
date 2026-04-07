@@ -7,10 +7,11 @@
 }
 
 <div class="assembly-shell">
+    <form method="post" id="antiForgeryForm">
+        @Html.AntiForgeryToken()
+    </form>
     <div class="assembly-viewer-card">
-        <div class="card-header">
-            <h3 class="mb-0">Сборка проекта @Model.ProjectId</h3>
-        </div>
+            
         <div class="card-body">
             @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
             {
@@ -18,28 +19,6 @@
             }
             else if (Model.Assembly != null)
             {
-                <div class="row g-3 mb-3">
-                    <div class="col-md-3">
-                        <strong>Длина consensus:</strong> @Model.Assembly.ConsensusLength
-                    </div>
-                    <div class="col-md-3">
-                        <strong>Создано:</strong> @Model.Assembly.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
-                    </div>
-                    @if (Model.Assembly.UpdatedAt.HasValue)
-                    {
-                        <div class="col-md-3">
-                            <strong>Обновлено:</strong> @Model.Assembly.UpdatedAt.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
-                        </div>
-                    }
-                    <div class="col-md-3">
-                        <strong>Layout:</strong> positions + traces
-                    </div>
-                </div>
-
-                <div class="summary-sequence mb-3">
-                    @Model.Assembly.ConsensusSequence
-                </div>
-
                 <div class="assembly-viewer-card">
                     <div class="assembly-toolbar">
                         <div class="zoom-group">
@@ -74,6 +53,15 @@
                             <input type="range" id="lowQualityThreshold" min="5" max="40" step="1" value="20" />
                             <span id="lowQualityThresholdValue">Q20</span>
                         </div>
+
+                        <div class="edit-group">
+                            <strong>Редактирование:</strong>
+                            <button type="button" id="editConsensusBtn">Edit consensus</button>
+                            <button type="button" id="saveConsensusBtn" disabled>Save</button>
+                            <button type="button" id="cancelConsensusBtn" disabled>Cancel</button>
+                            <span id="editStatusText">view mode</span>
+                        </div>
+
                     </div>
 
                     <div class="assembly-scroll" id="assemblyScroll">
@@ -118,6 +106,20 @@
         const lowQualityThreshold = document.getElementById("lowQualityThreshold");
         const lowQualityThresholdValue = document.getElementById("lowQualityThresholdValue");
 
+        const editConsensusBtn = document.getElementById("editConsensusBtn");
+        const saveConsensusBtn = document.getElementById("saveConsensusBtn");
+        const cancelConsensusBtn = document.getElementById("cancelConsensusBtn");
+        const editStatusText = document.getElementById("editStatusText");
+        const antiForgeryToken = document.querySelector('input[name="__RequestVerificationToken"]')?.value || "";
+
+        const assemblyId = @Model.Assembly?.Id ?? 0;
+        const projectId = @Model.ProjectId;
+
+        let editMode = false;
+        let selectedConsensusIndex = null;
+        let originalConsensusSequence = viewerData.consensusSequence || "";
+        let editedConsensusSequence = originalConsensusSequence.split("");
+
         const baseColors = {
             A: "#2e8b57",
             C: "#1f77b4",
@@ -133,7 +135,7 @@
         let consensusLowQThreshold = Number(lowQualityThreshold.value);
 
         function setPeakScale(nextValue) {
-            peakScale = Math.max(0.25, Math.min(4.0, Number(nextValue)));
+            peakScale = Math.max(0.25, Math.min(8.0, Number(nextValue)));
             peakScaleValue.textContent = `${peakScale.toFixed(1)}x`;
             renderViewer();
         }
@@ -163,6 +165,10 @@
             row.className = "sequence-row";
 
             const useLowQuality = !!options.useLowQuality;
+            const editable = !!options.editable;
+            const onBaseClick = options.onBaseClick || null;
+            const selectedIndex = Number.isInteger(options.selectedIndex) ? options.selectedIndex : -1;
+            const modifiedIndexes = options.modifiedIndexes || new Set();
 
             for (let i = 0; i < sequence.length; i++) {
                 const ch = sequence[i];
@@ -186,6 +192,25 @@
                     }
 
                     span.title = `Base: ${ch}, Q: ${q}`;
+                }
+
+                if (editable) {
+                    span.classList.add("editable-base");
+                    span.dataset.index = String(i);
+
+                    if (i === selectedIndex) {
+                        span.classList.add("selected-base");
+                    }
+
+                    if (modifiedIndexes.has(i)) {
+                        span.classList.add("modified-base");
+                    }
+
+                    span.addEventListener("click", () => {
+                        if (typeof onBaseClick === "function") {
+                            onBaseClick(i);
+                        }
+                    });
                 }
 
                 span.textContent = ch;
@@ -247,13 +272,38 @@
             const lane = document.createElement("div");
             lane.className = "lane-canvas consensus";
             lane.style.width = `${totalWidth}px`;
+
+            const currentSequence = editedConsensusSequence.join("");
+            const modifiedIndexes = new Set();
+
+            for (let i = 0; i < currentSequence.length; i++) {
+                if (currentSequence[i] !== originalConsensusSequence[i]) {
+                    modifiedIndexes.add(i);
+                }
+            }
+
             lane.appendChild(
                 createBaseRow(
-                    viewerData.consensusSequence,
+                    currentSequence,
                     viewerData.consensusQualities || [],
-                    { useLowQuality: true }
+                    {
+                        useLowQuality: true,
+                        editable: editMode,
+                        selectedIndex: selectedConsensusIndex,
+                        modifiedIndexes,
+                        onBaseClick: (index) => {
+                            if (!editMode) {
+                                return;
+                            }
+
+                            selectedConsensusIndex = index;
+                            editStatusText.textContent = `selected base: ${index}`;
+                            renderViewer();
+                        }
+                    }
                 )
             );
+
             return lane;
         }
 
@@ -293,6 +343,100 @@
             polyline.setAttribute("points", points.join(" "));
             polyline.setAttribute("opacity", highlightedBase && color !== baseColors[highlightedBase] ? "0.18" : "0.95");
             return polyline;
+        }
+
+        function enterEditMode() {
+            editMode = true;
+            selectedConsensusIndex = null;
+            saveConsensusBtn.disabled = false;
+            cancelConsensusBtn.disabled = false;
+            editStatusText.textContent = "edit mode";
+            renderViewer();
+        }
+
+        async function saveConsensusChanges() {
+            const newConsensus = editedConsensusSequence.join("");
+
+            if (!newConsensus || assemblyId <= 0) {
+                return;
+            }
+
+            saveConsensusBtn.disabled = true;
+            editStatusText.textContent = "saving...";
+
+            try {
+                const response = await fetch(`?handler=SaveConsensus`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "RequestVerificationToken": antiForgeryToken
+                    },
+                    body: JSON.stringify({
+                        assemblyId: assemblyId,
+                        projectId: projectId,
+                        consensusSequence: newConsensus
+                    })
+                });
+
+                const rawText = await response.text();
+                let payload = null;
+
+                if (rawText && rawText.trim().length > 0) {
+                    try {
+                        payload = JSON.parse(rawText);
+                    } catch {
+                        payload = null;
+                    }
+                }
+
+                if (!response.ok) {
+                    throw new Error(payload?.message || rawText || `HTTP ${response.status}`);
+                }
+
+                if (!payload) {
+                    throw new Error("Сервер вернул пустой ответ");
+                }
+
+                originalConsensusSequence = payload.consensusSequence;
+                editedConsensusSequence = payload.consensusSequence.split("");
+                viewerData.consensusSequence = payload.consensusSequence;
+                viewerData.consensusLength = payload.consensusLength;
+
+                exitEditMode(false);
+                editStatusText.textContent = "saved";
+            } catch (error) {
+                console.error(error);
+                editStatusText.textContent = "save failed";
+                saveConsensusBtn.disabled = false;
+                alert(error.message || "Ошибка при сохранении consensus");
+            }
+        }
+
+        function exitEditMode(resetChanges) {
+            if (resetChanges) {
+                editedConsensusSequence = originalConsensusSequence.split("");
+            }
+
+            editMode = false;
+            selectedConsensusIndex = null;
+            saveConsensusBtn.disabled = true;
+            cancelConsensusBtn.disabled = true;
+            editStatusText.textContent = "view mode";
+            renderViewer();
+        }
+
+        function replaceSelectedBase(newBase) {
+            if (!editMode || selectedConsensusIndex === null) {
+                return;
+            }
+
+            const up = String(newBase || "").toUpperCase();
+            if (!["A", "C", "G", "T", "N"].includes(up)) {
+                return;
+            }
+
+            editedConsensusSequence[selectedConsensusIndex] = up;
+            renderViewer();
         }
 
         function buildChromatogram(track, width) {
@@ -451,6 +595,61 @@
             lowQualityThresholdValue.textContent = `Q${consensusLowQThreshold}`;
             renderViewer();
         });
+
+        document.addEventListener("keydown", (event) => {
+            if (!editMode) {
+                return;
+            }
+
+            const key = event.key.toUpperCase();
+
+            if (["A", "C", "G", "T", "N"].includes(key)) {
+                replaceSelectedBase(key);
+                event.preventDefault();
+                return;
+            }
+
+            if (event.key === "ArrowLeft" && selectedConsensusIndex !== null && selectedConsensusIndex > 0) {
+                selectedConsensusIndex--;
+                renderViewer();
+                event.preventDefault();
+                return;
+            }
+
+            if (event.key === "ArrowRight" && selectedConsensusIndex !== null && selectedConsensusIndex < editedConsensusSequence.length - 1) {
+                selectedConsensusIndex++;
+                renderViewer();
+                event.preventDefault();
+                return;
+            }
+
+            if (event.key === "Escape") {
+                exitEditMode(true);
+                event.preventDefault();
+                return;
+            }
+
+            if (event.ctrlKey && event.key.toLowerCase() === "s") {
+                saveConsensusChanges();
+                event.preventDefault();
+            }
+        });
+
+    editConsensusBtn.addEventListener("click", () => {
+        if (editMode) {
+            exitEditMode(false);
+        } else {
+            enterEditMode();
+        }
+    });
+
+    saveConsensusBtn.addEventListener("click", async () => {
+        await saveConsensusChanges();
+    });
+
+    cancelConsensusBtn.addEventListener("click", () => {
+        exitEditMode(true);
+    });
 
         lowQualityThresholdValue.textContent = `Q${consensusLowQThreshold}`;
         toggleLowQualityBtn.classList.toggle("active", showLowQuality);

@@ -1,6 +1,7 @@
 using DataModels.ReadModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Text;
 using System.Text.Json;
 
 namespace Web_prototype.Pages
@@ -8,6 +9,7 @@ namespace Web_prototype.Pages
     public class AssemblyModel : PageModel
     {
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IConfiguration _configuration;
 
         private static readonly JsonSerializerOptions ApiJsonOptions = new()
         {
@@ -19,9 +21,10 @@ namespace Web_prototype.Pages
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
 
-        public AssemblyModel(IHttpClientFactory httpClientFactory)
+        public AssemblyModel(IHttpClientFactory httpClientFactory, IConfiguration configuration)
         {
             _httpClientFactory = httpClientFactory;
+            _configuration=configuration;
         }
 
         [BindProperty(SupportsGet = true)]
@@ -355,6 +358,67 @@ namespace Web_prototype.Pages
             }
         }
 
+        public async Task<IActionResult> OnPostSaveConsensusAsync([FromBody] SaveConsensusRequest request)
+        {
+            if (request == null)
+            {
+                return BadRequest(new { message = "Пустой запрос" });
+            }
+
+            if (request.AssemblyId <= 0)
+            {
+                return BadRequest(new { message = "Некорректный assemblyId" });
+            }
+
+            if (string.IsNullOrWhiteSpace(request.ConsensusSequence))
+            {
+                return BadRequest(new { message = "Пустая consensus sequence" });
+            }
+
+            var normalized = request.ConsensusSequence.Trim().ToUpperInvariant();
+
+            foreach (var ch in normalized)
+            {
+                if (!"ACGTNRYSWKMBDHV".Contains(ch))
+                {
+                    return BadRequest(new { message = $"Недопустимый символ: {ch}" });
+                }
+            }
+
+            var client = _httpClientFactory.CreateClient("ApiClient");
+
+            var payload = new DataModels.AssemblyModels.AssemblyModel
+            {
+                Id = request.AssemblyId,
+                ProjectId = request.ProjectId,
+                ConsensusSequence = normalized,
+                ConsensusLength = normalized.Length
+            };
+
+            var content = new StringContent(
+                JsonSerializer.Serialize(payload),
+                Encoding.UTF8,
+                "application/json");
+
+            var response = await client.PutAsync($"api/assembly/{request.AssemblyId}", content);
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return StatusCode((int)response.StatusCode, new
+                {
+                    message = string.IsNullOrWhiteSpace(responseBody) ? "Ошибка при сохранении" : responseBody
+                });
+            }
+
+            return new JsonResult(new
+            {
+                ok = true,
+                consensusSequence = normalized,
+                consensusLength = normalized.Length
+            });
+        }
+
         private sealed class ViewerDto
         {
             public string ConsensusSequence { get; set; } = string.Empty;
@@ -401,6 +465,12 @@ namespace Web_prototype.Pages
             public int[] C { get; set; } = Array.Empty<int>();
             public int[] G { get; set; } = Array.Empty<int>();
             public int[] T { get; set; } = Array.Empty<int>();
+        }
+        public class SaveConsensusRequest
+        {
+            public int AssemblyId { get; set; }
+            public int ProjectId { get; set; }
+            public string ConsensusSequence { get; set; } = string.Empty;
         }
     }
 }
