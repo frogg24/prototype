@@ -41,9 +41,11 @@
         </div>
 
         <div class="card">
-            <div class="card-header">
-                <h3>Мои проекты</h3>
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h3 class="mb-0">Мои проекты</h3>
+                <span id="projectsCount" class="text-muted small"></span>
             </div>
+
             <div class="card-body">
                 @if (Model.Projects.Count == 0)
                 {
@@ -51,14 +53,66 @@
                 }
                 else
                 {
-                    <ul class="list-group">
-                        @foreach (var project in Model.Projects.OrderByDescending(p => p.CreatedAt))
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label for="searchTitle" class="form-label">Поиск по названию</label>
+                            <input id="searchTitle"
+                                   type="text"
+                                   class="form-control"
+                                   placeholder="Введите часть названия проекта"
+                                   autocomplete="off" />
+                        </div>
+
+                        <div class="col-md-3">
+                            <label for="createdFrom" class="form-label">Дата создания: от</label>
+                            <input id="createdFrom" type="date" class="form-control" />
+                        </div>
+
+                        <div class="col-md-3">
+                            <label for="createdTo" class="form-label">Дата создания: до</label>
+                            <input id="createdTo" type="date" class="form-control" />
+                        </div>
+
+                        <div class="col-md-2">
+                            <label for="sortProjects" class="form-label">Сортировка</label>
+                            <select id="sortProjects" class="form-select">
+                                <option value="created_desc">Сначала новые</option>
+                                <option value="created_asc">Сначала старые</option>
+                                <option value="updated_desc">Недавно изменённые</option>
+                                <option value="updated_asc">Давно не изменялись</option>
+                                <option value="title_asc">Название А-Я</option>
+                                <option value="title_desc">Название Я-А</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12">
+                            <button type="button" id="resetFilters" class="btn btn-outline-secondary btn-sm">
+                                Сбросить фильтры
+                            </button>
+                        </div>
+                    </div>
+
+                    <p id="projectsEmpty" class="text-muted mb-3" style="display:none;">
+                        Проекты по выбранным фильтрам не найдены.
+                    </p>
+
+                    <ul class="list-group" id="projectsList">
+                        @foreach (var project in Model.Projects)
                         {
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <li class="list-group-item project-item d-flex justify-content-between align-items-center gap-3 flex-wrap"
+                                data-title="@project.Title"
+                                data-created-at="@project.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss")"
+                                data-updated-at="@project.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ss")">
                                 <div>
                                     <strong>@project.Title</strong>
-                                    <div class="text-muted small">Создан: @project.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</div>
+                                    <div class="text-muted small">
+                                        Создан: @project.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                                    </div>
+                                    <div class="text-muted small">
+                                        Изменён: @project.UpdatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                                    </div>
                                 </div>
+
                                 <a class="btn btn-outline-primary btn-sm" href="/Project/@project.Id">Открыть</a>
                             </li>
                         }
@@ -68,3 +122,137 @@
         </div>
     </div>
 </div>
+
+@section Scripts
+{
+    <script>
+        (() => {
+            const list = document.getElementById('projectsList');
+            if (!list) return;
+
+            const searchInput = document.getElementById('searchTitle');
+            const createdFromInput = document.getElementById('createdFrom');
+            const createdToInput = document.getElementById('createdTo');
+            const sortSelect = document.getElementById('sortProjects');
+            const resetButton = document.getElementById('resetFilters');
+            const emptyMessage = document.getElementById('projectsEmpty');
+            const countLabel = document.getElementById('projectsCount');
+
+            const allItems = Array.from(list.querySelectorAll('.project-item'));
+
+            function parseDate(value) {
+                return value ? new Date(value) : null;
+            }
+
+            function startOfDay(value) {
+                if (!value) return null;
+                return new Date(value + 'T00:00:00');
+            }
+
+            function endOfDay(value) {
+                if (!value) return null;
+                return new Date(value + 'T23:59:59.999');
+            }
+
+            function sortItems(items) {
+                const sortValue = sortSelect.value;
+
+                return items.sort((a, b) => {
+                    const titleA = (a.dataset.title || '').toLowerCase();
+                    const titleB = (b.dataset.title || '').toLowerCase();
+
+                    const createdA = parseDate(a.dataset.createdAt);
+                    const createdB = parseDate(b.dataset.createdAt);
+
+                    const updatedA = parseDate(a.dataset.updatedAt);
+                    const updatedB = parseDate(b.dataset.updatedAt);
+
+                    switch (sortValue) {
+                        case 'created_asc':
+                            return createdA - createdB;
+
+                        case 'updated_desc':
+                            return updatedB - updatedA;
+
+                        case 'updated_asc':
+                            return updatedA - updatedB;
+
+                        case 'title_asc':
+                            return titleA.localeCompare(titleB, 'ru');
+
+                        case 'title_desc':
+                            return titleB.localeCompare(titleA, 'ru');
+
+                        case 'created_desc':
+                        default:
+                            return createdB - createdA;
+                    }
+                });
+            }
+
+            function applyFilters() {
+                const searchValue = (searchInput.value || '').trim().toLowerCase();
+                const createdFrom = startOfDay(createdFromInput.value);
+                const createdTo = endOfDay(createdToInput.value);
+
+                let visibleItems = allItems.filter(item => {
+                    const title = (item.dataset.title || '').toLowerCase();
+                    const createdAt = parseDate(item.dataset.createdAt);
+
+                    const matchesSearch =
+                        !searchValue || title.includes(searchValue);
+
+                    const matchesFrom =
+                        !createdFrom || createdAt >= createdFrom;
+
+                    const matchesTo =
+                        !createdTo || createdAt <= createdTo;
+
+                    return matchesSearch && matchesFrom && matchesTo;
+                });
+
+                allItems.forEach(item => {
+                    item.style.display = 'none';
+                });
+
+                visibleItems = sortItems(visibleItems);
+
+                visibleItems.forEach(item => {
+                    item.style.display = '';
+                    list.appendChild(item);
+                });
+
+                const count = visibleItems.length;
+                countLabel.textContent = `Найдено: ${count}`;
+                emptyMessage.style.display = count === 0 ? '' : 'none';
+                list.style.display = count === 0 ? 'none' : '';
+            }
+
+            function debounce(fn, delay) {
+                let timer = null;
+                return function () {
+                    clearTimeout(timer);
+                    timer = setTimeout(fn, delay);
+                };
+            }
+
+            const debouncedApply = debounce(applyFilters, 200);
+
+            searchInput.addEventListener('input', debouncedApply);
+            createdFromInput.addEventListener('change', applyFilters);
+            createdToInput.addEventListener('change', applyFilters);
+            sortSelect.addEventListener('change', applyFilters);
+
+            resetButton.addEventListener('click', () => {
+                searchInput.value = '';
+                createdFromInput.value = '';
+                createdToInput.value = '';
+                sortSelect.value = 'created_desc';
+                applyFilters();
+            });
+
+            sortSelect.value = 'created_desc';
+            applyFilters();
+        })();
+    </script>
+}

@@ -46,7 +46,7 @@ namespace Web_prototype.Pages
                 return Page();
             }
 
-            var model = new DataModels.ProjectModels.ProjectModel
+            var model = new ProjectModel
             {
                 UserId = userId,
                 Title = NewProjectTitle.Trim(),
