@@ -419,6 +419,62 @@ namespace Web_prototype.Pages
             });
         }
 
+        private async Task<DataModels.AssemblyModels.AssemblyModel?> LoadLatestAssemblyAsync(int projectId)
+        {
+            var client = _httpClientFactory.CreateClient("ApiClient");
+
+            var assemblyResponse = await client.GetAsync($"api/assembly/project/{projectId}");
+            if (!assemblyResponse.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            var assemblyJson = await assemblyResponse.Content.ReadAsStringAsync();
+            var assemblies = JsonSerializer.Deserialize<List<DataModels.AssemblyModels.AssemblyModel>>(assemblyJson, ApiJsonOptions);
+
+            return assemblies?
+                .OrderByDescending(x => x.UpdatedAt ?? x.CreatedAt)
+                .FirstOrDefault();
+        }
+
+        private static string WrapFastaSequence(string sequence, int lineLength = 80)
+        {
+            if (string.IsNullOrWhiteSpace(sequence))
+            {
+                return string.Empty;
+            }
+
+            sequence = sequence.Trim().ToUpperInvariant();
+            var sb = new StringBuilder();
+
+            for (int i = 0; i < sequence.Length; i += lineLength)
+            {
+                int len = Math.Min(lineLength, sequence.Length - i);
+                sb.AppendLine(sequence.Substring(i, len));
+            }
+
+            return sb.ToString();
+        }
+
+        public async Task<IActionResult> OnGetDownloadFastaAsync(int projectId)
+        {
+            var assembly = await LoadLatestAssemblyAsync(projectId);
+
+            if (assembly == null || string.IsNullOrWhiteSpace(assembly.ConsensusSequence))
+            {
+                return NotFound("Assembly consensus not found");
+            }
+
+            var header = $">local|assembly_{assembly.Id}|project_{projectId} consensus length={assembly.ConsensusLength}";
+            var fastaBody = WrapFastaSequence(assembly.ConsensusSequence);
+            var fastaText = $"{header}\n{fastaBody}";
+
+            var bytes = Encoding.UTF8.GetBytes(fastaText);
+            var fileName = $"project_{projectId}_assembly_{assembly.Id}.fasta";
+
+            return File(bytes, "text/plain", fileName);
+        }
+
         private sealed class ViewerDto
         {
             public string ConsensusSequence { get; set; } = string.Empty;

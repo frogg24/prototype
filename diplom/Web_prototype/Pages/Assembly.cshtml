@@ -79,6 +79,11 @@
                 <a href="/MyProjects" class="btn btn-secondary">К моим проектам</a>
                 <a href="/Project/@Model.ProjectId" class="btn btn-outline-primary">Назад в проект</a>
             </div>
+
+            <a href="/Assembly/@Model.ProjectId?handler=DownloadFasta&projectId=@Model.ProjectId"
+               class="btn btn-success">
+                FASTA
+            </a>
         </div>
     </div>
 </div>
