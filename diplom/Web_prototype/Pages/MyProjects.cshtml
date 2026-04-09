@@ -1,60 +1,89 @@
 ﻿@page
 @model Web_prototype.Pages.MyProjectsModel
 @{
-    ViewData["Title"] = "My Projects";
+    ViewData["Title"] = "Мои проекты";
     Layout = "_Layout";
 }
 
-<div class="row mt-4">
-    <div class="col-md-12">
-        <div class="card mb-4">
-            <div class="card-header">
-                <h3>Профиль</h3>
+<section class="page-stack">
+    <section class="dashboard-hero">
+        <div class="dashboard-grid">
+            <div class="dashboard-content">
+                <span class="hero-badge">Личный кабинет</span>
+                <h1 class="dashboard-title">Управление проектами и сборками</h1>
+
+                <div class="dashboard-stats">
+                    <div class="stat-pill">
+                        <strong>@Model.Projects.Count</strong>
+                        <span>Всего проектов</span>
+                    </div>
+                    <div class="stat-pill">
+                        <strong>@(Model.Projects.Any() ? Model.Projects.Max(p => p.UpdatedAt).ToLocalTime().ToString("dd.MM") : "—")</strong>
+                        <span>Последнее обновление</span>
+                    </div>
+                    <div class="stat-pill">
+                        <strong>@(User.Identity?.Name ?? "User")</strong>
+                        <span>Текущий пользователь</span>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <form method="post" action="@Url.Page("/MyProjects", new { handler = "Create" })" class="row g-3">
-                    @Html.AntiForgeryToken()
 
-                    <div class="col-md-8">
-                        <input type="text"
-                               name="NewProjectTitle"
-                               value="@Model.NewProjectTitle"
-                               class="form-control"
-                               placeholder="Название проекта" />
-                    </div>
+            <div class="dashboard-side">
+                <div class="info-card">
+                    <span class="info-icon">➕</span>
+                    <h3>Новый проект</h3>
 
-                    <div class="col-md-4">
+                    <form method="post" action="@Url.Page("/MyProjects", new { handler = "Create" })" class="create-project-form mt-3">
+                        @Html.AntiForgeryToken()
+
+                        <div>
+                            <label for="NewProjectTitle">Название проекта</label>
+                            <input id="NewProjectTitle"
+                                   type="text"
+                                   name="NewProjectTitle"
+                                   value="@Model.NewProjectTitle"
+                                   class="form-control"
+                                   placeholder="Например, Sample_2026_04" />
+                        </div>
+
                         <button type="submit" class="btn btn-primary">Добавить проект</button>
-                    </div>
-                </form>
+                    </form>
 
-                @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
-                {
-                    <div class="alert alert-danger mt-3">@Model.ErrorMessage</div>
-                }
+                    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+                    {
+                        <div class="alert alert-danger">@Model.ErrorMessage</div>
+                    }
 
-                @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
-                {
-                    <div class="alert alert-success mt-3">@Model.SuccessMessage</div>
-                }
+                    @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
+                    {
+                        <div class="alert alert-success">@Model.SuccessMessage</div>
+                    }
+                </div>
             </div>
         </div>
+    </section>
 
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <h3 class="mb-0">Мои проекты</h3>
-                <span id="projectsCount" class="text-muted small"></span>
+    <section class="card">
+        <div class="card-header">
+            <div>
+                <h3>Мои проекты</h3>
             </div>
+            <span id="projectsCount" class="text-muted small"></span>
+        </div>
 
-            <div class="card-body">
-                @if (Model.Projects.Count == 0)
-                {
-                    <p class="text-muted mb-0">У вас пока нет проектов.</p>
-                }
-                else
-                {
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-4">
+        <div class="card-body section-stack">
+            @if (Model.Projects.Count == 0)
+            {
+                <div class="empty-state">
+                    <h3>Проекты пока не созданы</h3>
+                    <p class="section-subtitle">Создайте первый проект через форму выше — бизнес-логика и поведение останутся прежними.</p>
+                </div>
+            }
+            else
+            {
+                <div class="filter-panel">
+                    <div class="filter-grid">
+                        <div>
                             <label for="searchTitle" class="form-label">Поиск по названию</label>
                             <input id="searchTitle"
                                    type="text"
@@ -63,17 +92,17 @@
                                    autocomplete="off" />
                         </div>
 
-                        <div class="col-md-3">
+                        <div>
                             <label for="createdFrom" class="form-label">Дата создания: от</label>
                             <input id="createdFrom" type="date" class="form-control" />
                         </div>
 
-                        <div class="col-md-3">
+                        <div>
                             <label for="createdTo" class="form-label">Дата создания: до</label>
                             <input id="createdTo" type="date" class="form-control" />
                         </div>
 
-                        <div class="col-md-2">
+                        <div>
                             <label for="sortProjects" class="form-label">Сортировка</label>
                             <select id="sortProjects" class="form-select">
                                 <option value="created_desc">Сначала новые</option>
@@ -84,44 +113,44 @@
                                 <option value="title_desc">Название Я-А</option>
                             </select>
                         </div>
-
-                        <div class="col-12">
-                            <button type="button" id="resetFilters" class="btn btn-outline-secondary btn-sm">
-                                Сбросить фильтры
-                            </button>
-                        </div>
                     </div>
 
-                    <p id="projectsEmpty" class="text-muted mb-3" style="display:none;">
-                        Проекты по выбранным фильтрам не найдены.
-                    </p>
+                    <div>
+                        <button type="button" id="resetFilters" class="btn btn-outline-secondary btn-sm">Сбросить фильтры</button>
+                    </div>
+                </div>
 
-                    <ul class="list-group" id="projectsList">
-                        @foreach (var project in Model.Projects)
-                        {
-                            <li class="list-group-item project-item d-flex justify-content-between align-items-center gap-3 flex-wrap"
-                                data-title="@project.Title"
-                                data-created-at="@project.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss")"
-                                data-updated-at="@project.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ss")">
-                                <div>
+                <p id="projectsEmpty" class="text-muted mb-3" style="display:none;">
+                    Проекты по выбранным фильтрам не найдены.
+                </p>
+
+                <ul class="project-list list-group" id="projectsList">
+                    @foreach (var project in Model.Projects)
+                    {
+                        <li class="project-item project-list-item list-group-item"
+                            data-title="@project.Title"
+                            data-created-at="@project.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss")"
+                            data-updated-at="@project.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ss")">
+                            <div class="project-meta">
+                                <div class="project-title-row">
                                     <strong>@project.Title</strong>
-                                    <div class="text-muted small">
-                                        Создан: @project.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
-                                    </div>
-                                    <div class="text-muted small">
-                                        Изменён: @project.UpdatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
-                                    </div>
+                                    <span class="inline-badge">Проект</span>
                                 </div>
 
-                                <a class="btn btn-outline-primary btn-sm" href="/Project/@project.Id">Открыть</a>
-                            </li>
-                        }
-                    </ul>
-                }
-            </div>
+                                <div class="project-date-grid">
+                                    <div>Создан: @project.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</div>
+                                    <div>Изменён: @project.UpdatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</div>
+                                </div>
+                            </div>
+
+                            <a class="btn btn-outline-primary btn-sm" href="/Project/@project.Id">Открыть</a>
+                        </li>
+                    }
+                </ul>
+            }
         </div>
-    </div>
-</div>
+    </section>
+</section>
 
 @section Scripts
 {

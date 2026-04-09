@@ -1,40 +1,45 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Genome Assembly App</title>
+    <title>@ViewData["Title"] - Сборка генома</title>
     <link rel="stylesheet" href="~/css/site.css" />
 </head>
 <body>
-    <header>
-        <nav class="navbar">
+    <div class="app-shell">
+        <header class="site-header mb-4">
             <div class="container">
-                <a class="navbar-brand" href="/">Сборка генома</a>
-                <div>
-                    @if (User.Identity?.IsAuthenticated == true)
-                    {
-                        <span class="nav-link">@User.Identity?.Name</span>
-                        <a class="nav-link" href="/Index">Главная</a>
-                        <a class="nav-link" href="/MyProjects">Мои сборки</a>
-                        <form class="logout-form" method="get" action="/logout">
-                            <button type="submit" class="nav-link nav-button">Выйти</button>
-                        </form>
-                    }
-                    else
-                    {
-                        <a class="nav-link" href="/Login">Войти</a>
-                        <a class="nav-link" href="/Register">Регистрация</a>
-                    }
-                </div>
+                <nav class="navbar">
+                    <a class="navbar-brand" href="@(User.Identity?.IsAuthenticated == true ? "/Index" : "/")">Сборка генома</a>
+
+                    <div class="navbar-menu">
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <span class="user-pill">@User.Identity?.Name</span>
+                            <a class="nav-link" href="/Index">Главная</a>
+                            <a class="nav-link" href="/MyProjects">Мои сборки</a>
+                            <form class="logout-form" method="get" action="/logout">
+                                <button type="submit" class="nav-button">Выйти</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <a class="nav-link" href="/Login">Войти</a>
+                            <a class="nav-button" href="/Register">Регистрация</a>
+                        }
+                    </div>
+                </nav>
             </div>
-        </nav>
-    </header>
-    <div class="@(ViewData["FullWidth"] as bool? == true ? "container-fluid px-2 px-md-3" : "container")">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
+        </header>
+
+        <div class="@(ViewData["FullWidth"] as bool? == true ? "container-fluid px-2 px-md-3" : "container") site-main">
+            <main role="main" class="pb-3">
+                @RenderBody()
+            </main>
+        </div>
     </div>
+
     <script src="/js/site.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
