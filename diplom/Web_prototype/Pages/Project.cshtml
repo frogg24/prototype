@@ -102,6 +102,7 @@
                                 <th>Direction</th>
                                 <th>Последовательность</th>
                                 <th>Дата</th>
+                                <th>Удаление</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -119,6 +120,14 @@
                                         </div>
                                     </td>
                                     <td>@read.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
+                                    <td>
+                                        <form method="post" action="@Url.Page("/Project", new { id = Model.Id, handler = "DeleteRead" })">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@Model.Id" />
+                                            <input type="hidden" name="readId" value="@read.Id" />
+                                            <button type="submit" class="btn btn-outline-danger btn-sm">Удалить</button>
+                                        </form>
+                                    </td>
                                 </tr>
                             }
                         </tbody>

@@ -114,16 +114,10 @@ pre {
 .container,
 .container-fluid {
     width: 100%;
+    max-width: none;
     margin: 0 auto;
-    padding: 0 1.25rem;
-}
-
-.container {
-    max-width: 1220px;
-}
-
-.container-fluid {
-    max-width: 1600px;
+    padding-left: clamp(1rem, 3vw, 3rem);
+    padding-right: clamp(1rem, 3vw, 3rem);
 }
 
 .row {

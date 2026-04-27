@@ -142,5 +142,26 @@ namespace Web_prototype.Pages
 
             return RedirectToPage("/Assembly", new { projectId = Id });
         }
+
+        public async Task<IActionResult> OnPostDeleteReadAsync(int id, int readId)
+        {
+            Id = id;
+
+            var client = _httpClientFactory.CreateClient("ApiClient");
+            var response = await client.DeleteAsync($"api/read/{readId}");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                ErrorMessage = "   .";
+                await LoadProjectAsync();
+                await LoadReadsAsync();
+                return Page();
+            }
+
+            SuccessMessage = " .";
+            await LoadProjectAsync();
+            await LoadReadsAsync();
+            return Page();
+        }
     }
 }
