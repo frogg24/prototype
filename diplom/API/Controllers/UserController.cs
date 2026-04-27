@@ -9,19 +9,25 @@ namespace API.Controllers
     public class UserController : ControllerBase
     {
         private readonly UserLogic _userlogic;
+        private readonly ILogger<UserController> _logger;
 
-        public UserController(UserLogic userlogic)
+        public UserController(UserLogic userlogic, ILogger<UserController> logger)
         {
             _userlogic = userlogic;
+            _logger=logger;
         }
 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequestModel request)
         {
+            _logger.LogInformation($"Register request received. Email={request.Email}, Username={request.Username}");
+
             try
             {
                 if (request.Password != request.ConfirmPassword)
                 {
+                    _logger.LogWarning($"Register failed: passwords mismatch. Email={request.Email}");
+
                     return BadRequest(new { message = "Пароли не совпадают" });
                 }
 
@@ -39,21 +45,27 @@ namespace API.Controllers
 
                 if (result)
                 {
+                    _logger.LogInformation($"User registered successfully. Email={request.Email}");
+
                     return Ok(new { message = "Регистрация успешна" });
                 }
 
+                _logger.LogInformation($"User registration failed. Email={request.Email}");
                 return BadRequest(new { message = "Ошибка при регистрации" });
             }
             catch (System.ArgumentException ex)
             {
+                _logger.LogWarning($"Validation error during register. Email={request.Email}");
                 return BadRequest(new { message = ex.Message });
             }
             catch (System.InvalidOperationException ex)
             {
+                _logger.LogWarning($"Conflict during registration. Email={request.Email}");
                 return Conflict(new { message = ex.Message });
             }
             catch (System.Exception ex)
             {
+                _logger.LogError($"unexpected error during registration. Email={request.Email}");
                 return StatusCode(500, new { message = ex.Message + ex.InnerException?.Message + ex.InnerException?.StackTrace });
             }
         }
@@ -61,6 +73,7 @@ namespace API.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequestModel request)
         {
+            _logger.LogInformation($"Login request received. Email={request.Email}");
             try
             {
                 var searchModel = new UserSearchModel { Email = request.Email };
@@ -68,14 +81,17 @@ namespace API.Controllers
 
                 if (user == null)
                 {
+                    _logger.LogWarning($"Login failed. User not found. Email={request.Email}");
                     return Unauthorized(new { message = "Пользователь не найден" });
                 }
 
                 if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
                 {
+                    _logger.LogWarning($"Login failed. Incorrect password. Email={request.Email}");
                     return Unauthorized(new { message = "Неверный пароль" });
                 }
 
+                _logger.LogInformation($"Login sucess. Email={request.Email}");
                 return Ok(new
                 {
                     message = "Вход выполнен успешно",
@@ -84,6 +100,7 @@ namespace API.Controllers
             }
             catch (System.Exception ex)
             {
+                _logger.LogError($"Unexpacted error during login. Email={request.Email}");
                 return StatusCode(500, new { message = "Внутренняя ошибка сервера" });
             }
         }
@@ -91,6 +108,7 @@ namespace API.Controllers
         [HttpGet("users")]
         public async Task<IActionResult> GetAllUsers()
         {
+            _logger.LogInformation($"Get all users request received");
             try
             {
                 var users = await _userlogic.ReadList(null);
@@ -102,10 +120,12 @@ namespace API.Controllers
                     u.Email
                 }).ToList();
 
+                _logger.LogInformation($"Get all users success");
                 return Ok(safeUsers);
             }
             catch (System.Exception ex)
             {
+                _logger.LogError($"Unexpected error during");
                 return StatusCode(500, new { message = "Внутренняя ошибка сервера" });
             }
         }
@@ -113,6 +133,7 @@ namespace API.Controllers
         [HttpGet("users/{id}")]
         public async Task<IActionResult> GetUserById(int id)
         {
+            _logger.LogInformation($"Get user by ID request received");
             try
             {
                 var searchModel = new UserSearchModel { Id = id };
@@ -132,10 +153,12 @@ namespace API.Controllers
                     user.CreatedAt
                 };
 
+                _logger.LogInformation($"Get user by ID success");
                 return Ok(safeUser);
             }
             catch (System.Exception ex)
             {
+                _logger.LogError($"Unexpected error during getting user by ID");
                 return StatusCode(500, new { message = "Внутренняя ошибка сервера" });
             }
         }
@@ -144,6 +167,7 @@ namespace API.Controllers
         [HttpPut("users/{id}")]
         public async Task<IActionResult> UpdateUser(int id, [FromBody] UserSearchModel request)
         {
+            _logger.LogInformation($"Update user request received, user ID={id}");
             try
             {
                 // Получаем текущего пользователя
@@ -152,6 +176,7 @@ namespace API.Controllers
 
                 if (existingUser == null)
                 {
+                    _logger.LogWarning($"Update failed, user not found, user ID={id}");
                     return NotFound(new { message = "Пользователь не найден" });
                 }
 
@@ -163,21 +188,26 @@ namespace API.Controllers
 
                 if (result)
                 {
+                    _logger.LogInformation($"Update success, user ID={id}");
                     return Ok(new { message = "Данные пользователя обновлены" });
                 }
 
+                _logger.LogWarning($"Update failed, unexpected error, user ID={id}");
                 return BadRequest(new { message = "Ошибка при обновлении" });
             }
             catch (System.ArgumentException ex)
             {
+                _logger.LogWarning($"Update failed, validation failed, user ID={id}");
                 return BadRequest(new { message = ex.Message });
             }
             catch (System.InvalidOperationException ex)
             {
+                _logger.LogWarning($"Update failed, conflict, user ID={id}");
                 return Conflict(new { message = ex.Message });
             }
             catch (System.Exception ex)
             {
+                _logger.LogError($"Update failed, unexpected error, user ID={id}");
                 return StatusCode(500, new { message = "Внутренняя ошибка сервера" });
             }
         }
@@ -185,6 +215,7 @@ namespace API.Controllers
         [HttpDelete("users/{id}")]
         public async Task<IActionResult> DeleteUser(int id)
         {
+            _logger.LogInformation($"Delete user request received, user ID={id}");
             try
             {
                 var searchModel = new UserSearchModel { Id = id };
@@ -192,6 +223,7 @@ namespace API.Controllers
 
                 if (user == null)
                 {
+                    _logger.LogWarning($"Delete failed, user not found, user ID={id}");
                     return NotFound(new { message = "Пользователь не найден" });
                 }
 
@@ -199,13 +231,16 @@ namespace API.Controllers
 
                 if (result)
                 {
+                    _logger.LogInformation($"Delete user success, user ID={id}");
                     return Ok(new { message = "Пользователь удален" });
                 }
 
+                _logger.LogWarning($"Delete failed, unexpected error, user ID={id}");
                 return BadRequest(new { message = "Ошибка при удалении" });
             }
             catch (System.Exception ex)
             {
+                _logger.LogError($"Delete failed, unexpected error, user ID={id}");
                 return StatusCode(500, new { message = "Внутренняя ошибка сервера" });
             }
         }
@@ -213,6 +248,7 @@ namespace API.Controllers
         [HttpGet("users/search")]
         public async Task<IActionResult> SearchUsers([FromQuery] string? email = null, [FromQuery] string? username = null)
         {
+            _logger.LogInformation($"Search user, unexpected error, email={email}, username={username}");
             try
             {
                 var searchModel = new UserSearchModel
@@ -230,10 +266,12 @@ namespace API.Controllers
                     u.Email
                 }).ToList();
 
+                _logger.LogInformation($"Search user success email={email}, username={username}");
                 return Ok(safeUsers);
             }
             catch (System.Exception ex)
             {
+                _logger.LogInformation($"Search user, unexpected error, email={email}, username={username}");
                 return StatusCode(500, new { message = "Внутренняя ошибка сервера" });
             }
         }
