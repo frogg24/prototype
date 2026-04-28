@@ -1,9 +1,47 @@
 ﻿@page
 @{
-    ViewData["Title"] = "Home";
+    ViewData["Title"] = "Главная";
     Layout = "_Layout";
 }
 
-<div>
-    <img src="~/images/grib.jpg" />
-</div>
+<section class="page-stack">
+    <section class="page-hero">
+        <div class="hero-grid">
+            <div class="hero-content">
+                
+
+                <div class="hero-actions">
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <a class="btn btn-primary" href="/MyProjects">Открыть мои проекты</a>
+                    }
+                    else
+                    {
+                        <a class="btn btn-primary" href="/Login">Войти в систему</a>
+                        <a class="btn btn-outline-primary" href="/Register">Создать аккаунт</a>
+                    }
+                </div>
+            </div>
+
+            <div class="hero-visual">
+            </div>
+        </div>
+    </section>
+
+    <section class="feature-grid" id="features">
+        <article class="feature-card">
+            <span class="feature-icon">📁</span>
+            <h3>Проекты под рукой</h3>
+        </article>
+
+        <article class="feature-card">
+            <span class="feature-icon">🧪</span>
+            <h3>Чистая работа с AB1</h3>
+        </article>
+
+        <article class="feature-card">
+            <span class="feature-icon">📊</span>
+            <h3>Удобный просмотр сборки</h3>
+        </article>
+    </section>
+</section>

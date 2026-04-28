@@ -1,17 +1,26 @@
 ﻿@page
 @model Web_prototype.Pages.LoginModel
 @{
-    ViewData["Title"] = "Login";
+    ViewData["Title"] = "Вход";
     Layout = "_Layout";
 }
 
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h3>Вход</h3>
+<section class="auth-shell">
+    <div class="auth-card">
+        <aside class="auth-aside">
+            <div>
+                <h1 class="auth-title">Продолжите работу со своими сборками</h1>
+                
             </div>
-            <div class="card-body">
+        </aside>
+
+        <div class="auth-form-panel">
+            <div class="section-stack">
+                <div>
+                    <h2>Добро пожаловать</h2>
+                    <p class="section-subtitle">Используйте свои текущие учётные данные, чтобы продолжить работу.</p>
+                </div>
+
                 @if (TempData["SuccessMessage"] != null)
                 {
                     <div class="alert alert-success">@TempData["SuccessMessage"]</div>
@@ -19,23 +28,29 @@
 
                 @Html.ValidationSummary(excludePropertyErrors: true, message: string.Empty, htmlAttributes: new { @class = "text-danger" })
 
-                <form method="post">
+                <form method="post" class="auth-form">
                     @Html.AntiForgeryToken()
+
                     <div class="form-group">
-                        <label for="Input_Email">Эл. почта:</label>
-                        @Html.TextBoxFor(m => m.Input.Email, new { @class = "form-control", id = "Input_Email", type = "email" })
+                        <label for="Input_Email">Эл. почта</label>
+                        @Html.TextBoxFor(m => m.Input.Email, new { @class = "form-control", id = "Input_Email", type = "email", placeholder = "name@example.com" })
                         @Html.ValidationMessageFor(m => m.Input.Email, string.Empty, new { @class = "text-danger" })
                     </div>
+
                     <div class="form-group">
-                        <label for="Input_Password">Пароль:</label>
-                        @Html.PasswordFor(m => m.Input.Password, new { @class = "form-control", id = "Input_Password" })
+                        <label for="Input_Password">Пароль</label>
+                        @Html.PasswordFor(m => m.Input.Password, new { @class = "form-control", id = "Input_Password", placeholder = "Введите пароль" })
                         @Html.ValidationMessageFor(m => m.Input.Password, string.Empty, new { @class = "text-danger" })
                     </div>
+
                     <button type="submit" class="btn btn-primary">Войти</button>
                 </form>
-                <hr />
-                <p>Нет аккаунта? <a href="/Register">Регистрация</a></p>
+
+                <div class="auth-footer">
+                    <span>Нет аккаунта?</span>
+                    <a href="/Register">Перейти к регистрации</a>
+                </div>
             </div>
         </div>
     </div>
-</div>
+</section>

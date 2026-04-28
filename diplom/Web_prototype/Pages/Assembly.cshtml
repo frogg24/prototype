@@ -1,92 +1,87 @@
 ﻿@page "{projectId:int}"
 @model Web_prototype.Pages.AssemblyModel
 @{
-    ViewData["Title"] = "Assembly Results";
+    ViewData["Title"] = "Результаты сборки";
     Layout = "_Layout";
     ViewData["FullWidth"] = true;
 }
 
-<div class="assembly-shell">
-    <form method="post" id="antiForgeryForm">
-        @Html.AntiForgeryToken()
-    </form>
-    <div class="assembly-viewer-card">
-            
-        <div class="card-body">
-            @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
-            {
-                <div class="alert alert-warning">@Model.ErrorMessage</div>
-            }
-            else if (Model.Assembly != null)
-            {
-                <div class="assembly-viewer-card">
-                    <div class="assembly-toolbar">
-                        <div class="zoom-group">
-                            <strong>Масштаб:</strong>
-                            <button type="button" id="zoomOutBtn">−</button>
-                            <input type="range" id="zoomRange" min="8" max="24" step="1" value="12" />
-                            <button type="button" id="zoomInBtn">+</button>
-                            <span id="zoomValue">12 px/base</span>
-                        </div>
+<section class="workspace-shell">
+    <section class="workspace-hero">
+        <div class="workspace-hero-content">
+            <h1 class="workspace-title">Результаты сборки</h1>
 
-                        <div class="highlight-group">
-                            <strong>Подсветка:</strong>
-                            <button type="button" class="highlight-btn active" data-base="">All</button>
-                            <button type="button" class="highlight-btn" data-base="A">A</button>
-                            <button type="button" class="highlight-btn" data-base="C">C</button>
-                            <button type="button" class="highlight-btn" data-base="G">G</button>
-                            <button type="button" class="highlight-btn" data-base="T">T</button>
-                        </div>
+            <div class="workspace-actions">
+                <a href="/MyProjects" class="btn btn-secondary btn-sm">К моим проектам</a>
+                <a href="/Project/@Model.ProjectId" class="btn btn-outline-primary btn-sm">Назад в проект</a>
+                <a href="/Assembly/@Model.ProjectId?handler=DownloadFasta&projectId=@Model.ProjectId" class="btn btn-success btn-sm">Скачать FASTA</a>
+            </div>
+        </div>
+    </section>
 
-                        <div class="peak-group">
-                            <strong>Пики:</strong>
-                            <button type="button" id="smallerPeaksBtn">Smaller peaks</button>
-                            <button type="button" id="biggerPeaksBtn">Bigger peaks</button>
-                            <button type="button" id="resetPeaksBtn">Reset peaks</button>
-                            <span id="peakScaleValue">1.0x</span>
-                        </div>
+    <div class="assembly-shell">
+        <form method="post" id="antiForgeryForm">
+            @Html.AntiForgeryToken()
+        </form>
 
-                        <div class="quality-group">
-                            <strong>Качество consensus:</strong>
-                            <button type="button" id="toggleLowQualityBtn" class="active">Показать low-Q</button>
-                            <label for="lowQualityThreshold" class="mb-0">Порог</label>
-                            <input type="range" id="lowQualityThreshold" min="5" max="40" step="1" value="20" />
-                            <span id="lowQualityThresholdValue">Q20</span>
-                        </div>
-
-                        <div class="edit-group">
-                            <strong>Редактирование:</strong>
-                            <button type="button" id="editConsensusBtn">Edit consensus</button>
-                            <button type="button" id="saveConsensusBtn" disabled>Save</button>
-                            <button type="button" id="cancelConsensusBtn" disabled>Cancel</button>
-                            <span id="editStatusText">view mode</span>
-                        </div>
-
+        @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+        {
+            <div class="alert alert-warning">@Model.ErrorMessage</div>
+        }
+        else if (Model.Assembly != null)
+        {
+            <div class="assembly-viewer-card">
+                <div class="assembly-toolbar">
+                    <div class="zoom-group">
+                        <strong>Масштаб</strong>
+                        <button type="button" id="zoomOutBtn">−</button>
+                        <input type="range" id="zoomRange" min="8" max="24" step="1" value="12" />
+                        <button type="button" id="zoomInBtn">+</button>
+                        <span id="zoomValue">12 px/base</span>
                     </div>
 
-                    <div class="assembly-scroll" id="assemblyScroll">
-                        <div class="assembly-content" id="assemblyContent"></div>
+                    <div class="highlight-group">
+                        <strong>Подсветка</strong>
+                        <button type="button" class="highlight-btn active" data-base="">Все</button>
+                        <button type="button" class="highlight-btn" data-base="A">A</button>
+                        <button type="button" class="highlight-btn" data-base="C">C</button>
+                        <button type="button" class="highlight-btn" data-base="G">G</button>
+                        <button type="button" class="highlight-btn" data-base="T">T</button>
+                    </div>
+
+                    <div class="peak-group">
+                        <strong>Пики</strong>
+                        <button type="button" id="smallerPeaksBtn">Меньше</button>
+                        <button type="button" id="biggerPeaksBtn">Больше</button>
+                        <button type="button" id="resetPeaksBtn">Сброс</button>
+                        <span id="peakScaleValue">1.0x</span>
+                    </div>
+
+                    <div class="quality-group">
+                        <strong>Low-Q</strong>
+                        <button type="button" id="toggleLowQualityBtn" class="active">Показывать</button>
+                        <label for="lowQualityThreshold" class="mb-0">Порог</label>
+                        <input type="range" id="lowQualityThreshold" min="5" max="40" step="1" value="20" />
+                        <span id="lowQualityThresholdValue">Q20</span>
+                    </div>
+
+                    <div class="edit-group">
+                        <strong>Consensus</strong>
+                        <button type="button" id="editConsensusBtn">Редактировать</button>
+                        <button type="button" id="saveConsensusBtn" disabled>Сохранить</button>
+                        <button type="button" id="cancelConsensusBtn" disabled>Отмена</button>
+                        <span id="editStatusText">view mode</span>
                     </div>
                 </div>
 
-                <details class="mt-3">
-                    <summary>Показать raw layout JSON</summary>
-                    <pre class="mt-2">@Model.Assembly.TraceDataJson</pre>
-                </details>
-            }
-
-            <div class="mt-4 d-flex gap-2">
-                <a href="/MyProjects" class="btn btn-secondary">К моим проектам</a>
-                <a href="/Project/@Model.ProjectId" class="btn btn-outline-primary">Назад в проект</a>
+                <div class="assembly-scroll" id="assemblyScroll">
+                    <div class="assembly-content" id="assemblyContent"></div>
+                </div>
             </div>
 
-            <a href="/Assembly/@Model.ProjectId?handler=DownloadFasta&projectId=@Model.ProjectId"
-               class="btn btn-success">
-                FASTA
-            </a>
-        </div>
+        }
     </div>
-</div>
+</section>
 
 <script>
     (() => {

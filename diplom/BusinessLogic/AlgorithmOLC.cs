@@ -2,6 +2,7 @@
 using Database.Models;
 using DataModels.AssemblyModels;
 using DataModels.ReadModels;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,20 +16,25 @@ namespace BusinessLogic
     {
         private readonly ReadStorage _readStorage;
         private readonly List<PreparedRead> preparedReads = new();
+        private readonly ILogger<AlgorithmOLC> _logger;
 
-        public AlgorithmOLC(ReadStorage readStorage)
+        public AlgorithmOLC(ReadStorage readStorage, ILogger<AlgorithmOLC> logger)
         {
             _readStorage = readStorage;
+            _logger = logger;
         }
 
         public void PrepareReads(List<ReadModel> reads)
         {
+            _logger.LogInformation($"Prepare reads request received, readsCount={reads?.Count}");
+
             preparedReads.Clear();
 
             foreach (ReadModel read in reads)
             {
                 if (string.IsNullOrWhiteSpace(read.Sequence) || string.IsNullOrWhiteSpace(read.QualityValuesJson))
                 {
+                    _logger.LogWarning($"Prepare read skipped, sequence or quality values are empty, readID={read.Id}");
                     continue;
                 }
 
@@ -39,6 +45,7 @@ namespace BusinessLogic
 
                     if (qualities.Count != sequence.Length)
                     {
+                        _logger.LogWarning($"Prepare read skipped, sequence length does not match quality values count, readID={read.Id}");
                         continue;
                     }
 
@@ -57,32 +64,41 @@ namespace BusinessLogic
                     };
 
                     preparedReads.Add(preparedRead);
+                    _logger.LogInformation($"Read prepared successfully, readID={read.Id}");
                 }
                 catch
                 {
+                    _logger.LogWarning($"Prepare read failed, invalid quality values json, readID={read.Id}");
                     continue;
                 }
             }
+
+            _logger.LogInformation($"Prepare reads success, preparedReadsCount={preparedReads.Count}");
         }
 
         private (int leftTrim, int rightTrim) TrimByQ(AssemblyModel assembly, int trimSearchLimit = 40, int window = 10, double minQ = 15.0)
         {
+            _logger.LogInformation($"Trim by quality request received, assemblyID={assembly?.Id}, projectID={assembly?.ProjectId}");
+
             List<int> q = JsonSerializer.Deserialize<int[]>(assembly.QualityValuesJson)?.ToList() ?? new List<int>();
             int n = q.Count;
 
             if (n == 0 || string.IsNullOrEmpty(assembly.ConsensusSequence))
             {
+                _logger.LogWarning($"Trim by quality skipped, quality values or consensus sequence are empty, assemblyID={assembly.Id}, projectID={assembly.ProjectId}");
                 return (0, 0);
             }
 
             if (n != assembly.ConsensusSequence.Length)
             {
+                _logger.LogWarning($"Trim by quality failed, consensus sequence length does not match quality values length, assemblyID={assembly.Id}, projectID={assembly.ProjectId}");
                 throw new Exception("Consensus sequence length does not match quality values length");
             }
 
             if (n < window)
             {
                 assembly.ConsensusLength = assembly.ConsensusSequence.Length;
+                _logger.LogInformation($"Trim by quality skipped, consensus length less than window, assemblyID={assembly.Id}, projectID={assembly.ProjectId}");
                 return (0, 0);
             }
 
@@ -106,6 +122,7 @@ namespace BusinessLogic
             int newLength = n - leftTrim - rightTrim;
             if (newLength <= 0)
             {
+                _logger.LogWarning($"Trim by quality failed, trim removed entire consensus, assemblyID={assembly.Id}, projectID={assembly.ProjectId}");
                 throw new Exception("Trim removed entire consensus");
             }
 
@@ -115,6 +132,7 @@ namespace BusinessLogic
             assembly.ConsensusLength = assembly.ConsensusSequence.Length;
 
             Console.WriteLine($"на основе качества обрезка слева: {leftTrim} и справа: {rightTrim}");
+            _logger.LogInformation($"Trim by quality success, assemblyID={assembly.Id}, projectID={assembly.ProjectId}, leftTrim={leftTrim}, rightTrim={rightTrim}");
 
             return (leftTrim, rightTrim);
         }
@@ -191,81 +209,96 @@ namespace BusinessLogic
 
         public async Task<AssemblyModel> OLC(int projectId)
         {
-            List<ReadModel> reads = await _readStorage.GetFilteredList(new ReadSearchModel
+            _logger.LogInformation($"OLC request received, projectID={projectId}");
+
+            try
             {
-                ProjectId = projectId
-            });
-
-            PrepareReads(reads);
-
-            if (preparedReads.Count <= 1)
-            {
-                throw new Exception("not enough reads for OLC");
-            }
-
-            if (preparedReads.Count > 4)
-            {
-                throw new Exception("current algorithm supports up to 4 reads");
-            }
-
-            AssemblyCandidate? best = BuildBestCandidate(preparedReads);
-
-            if (best == null)
-            {
-                throw new Exception("no valid assembly candidate found");
-            }
-
-            AssemblyModel assembly = new AssemblyModel
-            {
-                ProjectId = projectId,
-                ConsensusSequence = best.Sequence,
-                ConsensusLength = best.Sequence.Length,
-                QualityValuesJson = JsonSerializer.Serialize(best.Qualities),
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
-
-            var trimResult = TrimByQ(assembly);
-
-            List<ReadPlacementModel> finalPlacements = best.Placements
-                .Select(p => new ReadPlacementModel
+                List<ReadModel> reads = await _readStorage.GetFilteredList(new ReadSearchModel
                 {
-                    ReadId = p.ReadId,
-                    Start = p.Start - trimResult.leftTrim,
-                    End = p.End - trimResult.leftTrim,
-                    LeftTrim = p.LeftTrim,
-                    RightTrim = p.RightTrim,
-                    WasReversed = p.WasReversed
-                })
-                .Where(p => p.End > 0 && p.Start < assembly.ConsensusLength)
-                .Select(p =>
+                    ProjectId = projectId
+                });
+
+                PrepareReads(reads);
+
+                if (preparedReads.Count <= 1)
                 {
-                    if (p.Start < 0)
+                    _logger.LogWarning($"OLC failed, not enough reads, projectID={projectId}, preparedReadsCount={preparedReads.Count}");
+                    throw new Exception("not enough reads for OLC");
+                }
+
+                if (preparedReads.Count > 4)
+                {
+                    _logger.LogWarning($"OLC failed, too many reads, projectID={projectId}, preparedReadsCount={preparedReads.Count}");
+                    throw new Exception("current algorithm supports up to 4 reads");
+                }
+
+                AssemblyCandidate? best = BuildBestCandidate(preparedReads);
+
+                if (best == null)
+                {
+                    _logger.LogWarning($"OLC failed, no valid assembly candidate found, projectID={projectId}");
+                    throw new Exception("no valid assembly candidate found");
+                }
+
+                AssemblyModel assembly = new AssemblyModel
+                {
+                    ProjectId = projectId,
+                    ConsensusSequence = best.Sequence,
+                    ConsensusLength = best.Sequence.Length,
+                    QualityValuesJson = JsonSerializer.Serialize(best.Qualities),
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                var trimResult = TrimByQ(assembly);
+
+                List<ReadPlacementModel> finalPlacements = best.Placements
+                    .Select(p => new ReadPlacementModel
                     {
-                        p.Start = 0;
-                    }
-
-                    if (p.End > assembly.ConsensusLength)
+                        ReadId = p.ReadId,
+                        Start = p.Start - trimResult.leftTrim,
+                        End = p.End - trimResult.leftTrim,
+                        LeftTrim = p.LeftTrim,
+                        RightTrim = p.RightTrim,
+                        WasReversed = p.WasReversed
+                    })
+                    .Where(p => p.End > 0 && p.Start < assembly.ConsensusLength)
+                    .Select(p =>
                     {
-                        p.End = assembly.ConsensusLength;
-                    }
+                        if (p.Start < 0)
+                        {
+                            p.Start = 0;
+                        }
 
-                    return p;
-                })
-                .Where(p => p.Start < p.End)
-                .ToList();
+                        if (p.End > assembly.ConsensusLength)
+                        {
+                            p.End = assembly.ConsensusLength;
+                        }
 
-            assembly.TraceDataJson = JsonSerializer.Serialize(finalPlacements);
-            assembly.ConsensusLength = assembly.ConsensusSequence.Length;
-            assembly.UpdatedAt = DateTime.UtcNow;
+                        return p;
+                    })
+                    .Where(p => p.Start < p.End)
+                    .ToList();
 
-            Console.WriteLine("BEST PATH: " + string.Join(" -> ", best.Path));
-            Console.WriteLine($"TOTAL SCORE: {best.TotalScore}");
-            Console.WriteLine($"TOTAL OVERLAP: {best.TotalOverlap}");
-            Console.WriteLine($"MIN RATE: {best.MinRate:F3}");
-            Console.WriteLine($"CONSENSUS LEN: {assembly.ConsensusLength}");
+                assembly.TraceDataJson = JsonSerializer.Serialize(finalPlacements);
+                assembly.ConsensusLength = assembly.ConsensusSequence.Length;
+                assembly.UpdatedAt = DateTime.UtcNow;
 
-            return assembly;
+                Console.WriteLine("BEST PATH: " + string.Join(" -> ", best.Path));
+                Console.WriteLine($"TOTAL SCORE: {best.TotalScore}");
+                Console.WriteLine($"TOTAL OVERLAP: {best.TotalOverlap}");
+                Console.WriteLine($"MIN RATE: {best.MinRate:F3}");
+                Console.WriteLine($"CONSENSUS LEN: {assembly.ConsensusLength}");
+
+                _logger.LogInformation($"OLC success, projectID={projectId}, consensusLength={assembly.ConsensusLength}");
+
+                return assembly;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"OLC failed, unexpected error, projectID={projectId}");
+                throw;
+            }
         }
 
         private string ReverseRead(string seq)
@@ -567,6 +600,15 @@ namespace BusinessLogic
                         best = candidate;
                     }
                 }
+            }
+
+            if (best == null)
+            {
+                _logger.LogWarning($"Build best assembly candidate failed, valid candidate not found, readsCount={reads.Count}");
+            }
+            else
+            {
+                _logger.LogInformation($"Build best assembly candidate success, readsCount={reads.Count}, consensusLength={best.Sequence.Length}");
             }
 
             return best;

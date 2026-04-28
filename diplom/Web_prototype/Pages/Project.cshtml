@@ -2,68 +2,92 @@
 @model Web_prototype.Pages.ProjectPageModel
 @using DataModels.enums
 @{
-    ViewData["Title"] = "Project";
+    ViewData["Title"] = "Проект";
     Layout = "_Layout";
 }
 
-<div class="container-fluid mt-4">
-    <div class="card mb-3">
-        <div class="card-header">
-            <h3>@(Model.Project?.Title ?? "Проект")</h3>
-        </div>
-        <div class="card-body">
-            <a href="/MyProjects" class="btn btn-outline-secondary btn-sm">← К проектам</a>
+<section class="page-stack">
+    <section class="project-hero">
+        <div class="project-hero-grid">
+            <div class="project-hero-content">
+                <h1 class="project-title">@(Model.Project?.Title ?? "Проект")</h1>
 
-            <form method="post" action="@Url.Page("/Project", new { id = Model.Id, handler = "Assemble" })">
+                <div class="project-toolbar">
+                    <a href="/MyProjects" class="btn btn-secondary btn-sm">← К проектам</a>
+
+                    <form method="post" action="@Url.Page("/Project", new { id = Model.Id, handler = "Assemble" })">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <button type="submit" class="btn btn-success btn-sm">Запустить сборку</button>
+                    </form>
+
+                    <a href="@Url.Page("/Assembly", new { projectId = Model.Id })" class="btn btn-outline-primary btn-sm">
+                        Открыть результат
+                    </a>
+                </div>
+            </div>
+
+            <div class="project-hero-side">
+                <div class="info-card">
+                    <span class="info-icon">🧬</span>
+                    <h3>Рабочая область проекта</h3>
+                    <div class="reads-summary mt-3">
+                        <span class="inline-badge">Ридов: @Model.Reads.Count</span>
+                        <span class="inline-badge">Проект активен</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="card">
+        <div class="card-header">
+            <div>
+                <h3>AB1-файлы</h3>
+            </div>
+        </div>
+        <div class="card-body section-stack">
+            <p class="upload-note">Выберите один или несколько файлов формата <strong>.ab1</strong>.</p>
+
+            <form method="post" action="@Url.Page("/Project", new { id = Model.Id, handler = "Upload" })" enctype="multipart/form-data" class="section-stack">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="id" value="@Model.Id" />
-                <button type="submit" class="btn btn-success btn-sm">Запустить сборку</button>
-            </form>
 
-            <a href="@Url.Page("/Assembly", new { projectId = Model.Id })" class="btn btn-outline-primary btn-sm">
-                Открыть результат
-            </a>
-        </div>
-    </div>
-
-    <div class="card mb-3">
-        <div class="card-header">
-            <h4>Загрузка ридов (.ab1)</h4>
-        </div>
-        <div class="card-body">
-            <form method="post" action="@Url.Page("/Project", new { id = Model.Id, handler = "Upload" })" enctype="multipart/form-data">
-                @Html.AntiForgeryToken()
-
-                <input type="hidden" name="id" value="@Model.Id" />
-
-                <div class="form-group mb-3">
-                    <label for="UploadedFiles">Выберите .ab1 файлы:</label>
+                <div class="form-group mb-0">
+                    <label for="UploadedFiles">Выберите файлы</label>
                     <input type="file" class="form-control" id="UploadedFiles" name="UploadedFiles" accept=".ab1" multiple />
                 </div>
 
-                <button type="submit" class="btn btn-primary">Загрузить</button>
+                <div>
+                    <button type="submit" class="btn btn-primary">Загрузить</button>
+                </div>
             </form>
 
             @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
             {
-                <div class="alert alert-danger mt-3">@Model.ErrorMessage</div>
+                <div class="alert alert-danger">@Model.ErrorMessage</div>
             }
 
             @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
             {
-                <div class="alert alert-success mt-3">@Model.SuccessMessage</div>
+                <div class="alert alert-success">@Model.SuccessMessage</div>
             }
         </div>
-    </div>
+    </section>
 
-    <div class="card">
+    <section class="card">
         <div class="card-header">
-            <h4>Риды текущего проекта</h4>
+            <div>
+                <h3>Риды текущего проекта</h3>
+            </div>
         </div>
         <div class="card-body">
             @if (Model.Reads.Count == 0)
             {
-                <p class="text-muted mb-0">В этом проекте пока нет ридов.</p>
+                <div class="empty-state">
+                    <h3>В проекте пока нет ридов</h3>
+                    <p class="section-subtitle">После загрузки файлы появятся здесь, а логика отображения данных останется прежней.</p>
+                </div>
             }
             else
             {
@@ -78,6 +102,7 @@
                                 <th>Direction</th>
                                 <th>Последовательность</th>
                                 <th>Дата</th>
+                                <th>Удаление</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -89,8 +114,20 @@
                                     <td>@(read.InstrumentModel ?? "-")</td>
                                     <td>@read.SequenceLength</td>
                                     <td>@read.Direction</td>
-                                    <td style="max-width: 420px; word-break: break-all;">@(read.Sequence.Length > 120 ? read.Sequence[..120] + "..." : read.Sequence)</td>
+                                    <td>
+                                        <div class="sequence-preview">
+                                            @(read.Sequence.Length > 120 ? read.Sequence[..120] + "..." : read.Sequence)
+                                        </div>
+                                    </td>
                                     <td>@read.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
+                                    <td>
+                                        <form method="post" action="@Url.Page("/Project", new { id = Model.Id, handler = "DeleteRead" })">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@Model.Id" />
+                                            <input type="hidden" name="readId" value="@read.Id" />
+                                            <button type="submit" class="btn btn-outline-danger btn-sm">Удалить</button>
+                                        </form>
+                                    </td>
                                 </tr>
                             }
                         </tbody>
@@ -98,5 +135,5 @@
                 </div>
             }
         </div>
-    </div>
-</div>
+    </section>
+</section>
