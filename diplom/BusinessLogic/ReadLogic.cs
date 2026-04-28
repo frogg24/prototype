@@ -1,5 +1,6 @@
 ﻿using Database.Implements;
 using DataModels.enums;
+using DataModels.Interfaces;
 using DataModels.ReadModels;
 using Microsoft.Extensions.Logging;
 using System;
@@ -13,10 +14,10 @@ namespace BusinessLogic
 {
     public class ReadLogic
     {
-        private readonly ReadStorage _readStorage;
+        private readonly IReadStorage _readStorage;
         private readonly ILogger<ReadLogic> _logger;
 
-        public ReadLogic(ReadStorage readStorage, ILogger<ReadLogic> logger)
+        public ReadLogic(IReadStorage readStorage, ILogger<ReadLogic> logger)
         {
             _readStorage = readStorage;
             _logger = logger;

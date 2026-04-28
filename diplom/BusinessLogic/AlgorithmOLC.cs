@@ -1,6 +1,7 @@
 ﻿using Database.Implements;
 using Database.Models;
 using DataModels.AssemblyModels;
+using DataModels.Interfaces;
 using DataModels.ReadModels;
 using Microsoft.Extensions.Logging;
 using System;
@@ -14,11 +15,11 @@ namespace BusinessLogic
 {
     public class AlgorithmOLC
     {
-        private readonly ReadStorage _readStorage;
+        private readonly IReadStorage _readStorage;
         private readonly List<PreparedRead> preparedReads = new();
         private readonly ILogger<AlgorithmOLC> _logger;
 
-        public AlgorithmOLC(ReadStorage readStorage, ILogger<AlgorithmOLC> logger)
+        public AlgorithmOLC(IReadStorage readStorage, ILogger<AlgorithmOLC> logger)
         {
             _readStorage = readStorage;
             _logger = logger;

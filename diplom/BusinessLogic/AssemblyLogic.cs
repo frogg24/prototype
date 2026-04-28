@@ -1,6 +1,7 @@
 ﻿using Database.Implements;
 using DataModels.AssemblyModels;
 using DataModels.enums;
+using DataModels.Interfaces;
 using DataModels.ReadModels;
 using Microsoft.Extensions.Logging;
 using System;
@@ -14,11 +15,11 @@ namespace BusinessLogic
 {
     public class AssemblyLogic
     {
-        private readonly AssemblyStorage _assemblyStorage;
+        private readonly IAssemblyStorage _assemblyStorage;
         private readonly AlgorithmOLC _algorithmOLC;
         private readonly ILogger<AssemblyLogic> _logger;
 
-        public AssemblyLogic(AssemblyStorage assemblyStorage, AlgorithmOLC algorithmOLC, ILogger<AssemblyLogic> logger)
+        public AssemblyLogic(IAssemblyStorage assemblyStorage, AlgorithmOLC algorithmOLC, ILogger<AssemblyLogic> logger)
         {
             _assemblyStorage = assemblyStorage;
             _algorithmOLC=algorithmOLC;

@@ -1,4 +1,5 @@
 ﻿using Database.Implements;
+using DataModels.Interfaces;
 using DataModels.UserModels;
 using Microsoft.Extensions.Logging;
 using System;
@@ -12,10 +13,10 @@ namespace BusinessLogic
 {
     public class UserLogic
     {
-        private readonly UserStorage _userStorage;
+        private readonly IUserStorage _userStorage;
         private readonly ILogger<UserLogic> _logger;
 
-        public UserLogic(UserStorage userStorage, ILogger<UserLogic> logger)
+        public UserLogic(IUserStorage userStorage, ILogger<UserLogic> logger)
         {
             _userStorage = userStorage;
             _logger = logger;

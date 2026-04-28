@@ -1,8 +1,9 @@
+using API.Logging;
 using BusinessLogic;
 using Database.Implements;
+using DataModels.Interfaces;
 using NLog;
 using NLog.Web;
-using API.Logging;
 
 var logger = LogManager.Setup()
     .LoadConfigurationFromFile("nlog.config")
@@ -33,6 +34,11 @@ try
     builder.Services.AddScoped<AlgorithmOLC>();
 
     builder.Services.AddScoped<IAdminAuditLogger, AdminAuditLogger>();
+
+    builder.Services.AddScoped<IUserStorage, UserStorage>();
+    builder.Services.AddScoped<IProjectStorage, ProjectStorage>();
+    builder.Services.AddScoped<IReadStorage, ReadStorage>();
+    builder.Services.AddScoped<IAssemblyStorage, AssemblyStorage>();
 
     var app = builder.Build();
 

@@ -1,4 +1,5 @@
 ﻿using Database.Models;
+using DataModels.Interfaces;
 using DataModels.UserModels;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -10,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Database.Implements
 {
-    public class UserStorage
+    public class UserStorage: IUserStorage
     {
         private readonly ILogger<UserStorage> _logger;
 
