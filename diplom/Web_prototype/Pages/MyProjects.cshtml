@@ -143,7 +143,13 @@
                                 </div>
                             </div>
 
-                            <a class="btn btn-outline-primary btn-sm" href="/Project/@project.Id">Открыть</a>
+                            <div class="d-flex gap-2">
+                                <a class="btn btn-outline-primary btn-sm" href="/Project/@project.Id">Открыть</a>
+                                <form method="post" action="@Url.Page("/MyProjects", new { handler = "Delete", projectId = project.Id })" onsubmit="return confirm('Удалить проект и связанные данные?');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">Удалить</button>
+                                </form>
+                            </div>
                         </li>
                     }
                 </ul>
