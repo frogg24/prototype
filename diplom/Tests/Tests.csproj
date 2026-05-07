@@ -21,4 +21,13 @@
     <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="TestData\Ab1\" />
+  </ItemGroup>
+
+	<ItemGroup>
+		<None Update="TestData\Ab1\*.ab1">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
 </Project>

@@ -132,7 +132,7 @@ namespace BusinessLogic
             assembly.QualityValuesJson = JsonSerializer.Serialize(q);
             assembly.ConsensusLength = assembly.ConsensusSequence.Length;
 
-            Console.WriteLine($"на основе качества обрезка слева: {leftTrim} и справа: {rightTrim}");
+            //Console.WriteLine($"на основе качества обрезка слева: {leftTrim} и справа: {rightTrim}");
             _logger.LogInformation($"Trim by quality success, assemblyID={assembly.Id}, projectID={assembly.ProjectId}, leftTrim={leftTrim}, rightTrim={rightTrim}");
 
             return (leftTrim, rightTrim);
@@ -285,11 +285,11 @@ namespace BusinessLogic
                 assembly.ConsensusLength = assembly.ConsensusSequence.Length;
                 assembly.UpdatedAt = DateTime.UtcNow;
 
-                Console.WriteLine("BEST PATH: " + string.Join(" -> ", best.Path));
-                Console.WriteLine($"TOTAL SCORE: {best.TotalScore}");
-                Console.WriteLine($"TOTAL OVERLAP: {best.TotalOverlap}");
-                Console.WriteLine($"MIN RATE: {best.MinRate:F3}");
-                Console.WriteLine($"CONSENSUS LEN: {assembly.ConsensusLength}");
+                //Console.WriteLine("BEST PATH: " + string.Join(" -> ", best.Path));
+                //Console.WriteLine($"TOTAL SCORE: {best.TotalScore}");
+                //Console.WriteLine($"TOTAL OVERLAP: {best.TotalOverlap}");
+                //Console.WriteLine($"MIN RATE: {best.MinRate:F3}");
+                //Console.WriteLine($"CONSENSUS LEN: {assembly.ConsensusLength}");
 
                 _logger.LogInformation($"OLC success, projectID={projectId}, consensusLength={assembly.ConsensusLength}");
 
@@ -576,12 +576,12 @@ namespace BusinessLogic
                     AssemblyCandidate candidate = CreateSeedCandidate(orientedReads[0]);
                     bool failed = false;
 
-                    Console.WriteLine("попытка собрать:");
-                    foreach (var read in orientedReads)
-                    {
-                        Console.WriteLine($"ID: {read.SourceId}, Was reversed: {read.WasReversed}");
-                    }
-                    Console.WriteLine("=============");
+                    //Console.WriteLine("попытка собрать:");
+                    //foreach (var read in orientedReads)
+                    //{
+                    //    Console.WriteLine($"ID: {read.SourceId}, Was reversed: {read.WasReversed}");
+                    //}
+                    //Console.WriteLine("=============");
 
                     for (int i = 1; i < orientedReads.Count; i++)
                     {
