@@ -133,6 +133,7 @@
         let peakScale = 1.0;
         let showLowQuality = true;
         let consensusLowQThreshold = Number(lowQualityThreshold.value);
+        const showPeakDebugOverlay = new URLSearchParams(window.location.search).get("debugPLOC") === "1";
 
         function setPeakScale(nextValue) {
             peakScale = Math.max(0.25, Math.min(8.0, Number(nextValue)));
@@ -307,7 +308,57 @@
             return lane;
         }
 
-        function buildPolyline(values, width, height, color, maxValue) {
+        function createSampleToXMapper(track, width, sampleCount) {
+            const peaks = Array.isArray(track.peakLocations) ? track.peakLocations.map(Number) : [];
+            const alignedBases = String(track.sequence || "").split("");
+            const nonGapColumns = alignedBases
+                .map((base, index) => ({ base, index }))
+                .filter(item => item.base !== "-" && item.base !== ".")
+                .map(item => item.index);
+            const visibleBaseCount = nonGapColumns.length || (Number(track.visibleLength) || 0);
+            const hasPLOC = !!track.usesPeakLocations && peaks.length >= visibleBaseCount && visibleBaseCount > 0;
+
+            if (!hasPLOC) {
+                // Legacy fallback for old imported reads or AB1 files without PLOC: this keeps
+                // the viewer usable, but sample/base alignment may drift across the read.
+                return sampleIndex => {
+                    const maxSample = Math.max(1, (Number(sampleCount) || 1) - 1);
+                    return (sampleIndex / maxSample) * width;
+                };
+            }
+
+            const centerOfBase = baseIndex => {
+                const alignedColumn = nonGapColumns.length > baseIndex ? nonGapColumns[baseIndex] : baseIndex;
+                return (alignedColumn * baseWidth) + (baseWidth / 2);
+            };
+
+            return sampleIndex => {
+                if (visibleBaseCount === 1) {
+                    const spacing = Math.max(1, width);
+                    return centerOfBase(0) + ((sampleIndex - peaks[0]) / spacing) * baseWidth;
+                }
+
+                if (sampleIndex <= peaks[0]) {
+                    const spacing = Math.max(1, peaks[1] - peaks[0]);
+                    return centerOfBase(0) + ((sampleIndex - peaks[0]) / spacing) * baseWidth;
+                }
+
+                for (let i = 0; i < visibleBaseCount - 1; i++) {
+                    const leftPeak = peaks[i];
+                    const rightPeak = peaks[i + 1];
+                    if (sampleIndex <= rightPeak) {
+                        const ratio = (sampleIndex - leftPeak) / Math.max(1, rightPeak - leftPeak);
+                        return centerOfBase(i) + ratio * baseWidth;
+                    }
+                }
+
+                const last = visibleBaseCount - 1;
+                const spacing = Math.max(1, peaks[last] - peaks[last - 1]);
+                return centerOfBase(last) + ((sampleIndex - peaks[last]) / spacing) * baseWidth;
+            };
+        }
+
+        function buildPolyline(values, width, height, color, maxValue, sampleToX) {
             if (!values || values.length === 0 || width <= 0) {
                 return null;
             }
@@ -326,7 +377,7 @@
             const points = [];
 
             for (let i = 0; i < values.length; i += stride) {
-                const x = values.length === 1 ? 0 : (i / (values.length - 1)) * width;
+                const x = sampleToX(i);
                 const rawY = height - 6 - ((values[i] || 0) / effectiveMax) * (height - 12);
                 const y = Math.max(4, Math.min(height - 6, rawY));
                 points.push(`${x.toFixed(2)},${y.toFixed(2)}`);
@@ -334,7 +385,7 @@
 
             if ((values.length - 1) % stride !== 0) {
                 const lastIndex = values.length - 1;
-                const x = width;
+                const x = sampleToX(lastIndex);
                 const rawY = height - 6 - ((values[lastIndex] || 0) / effectiveMax) * (height - 12);
                 const y = Math.max(4, Math.min(height - 6, rawY));
                 points.push(`${x.toFixed(2)},${y.toFixed(2)}`);
@@ -477,9 +528,26 @@
             ];
 
             for (const channel of channelOrder) {
-                const polyline = buildPolyline(channel.values, width, height, baseColors[channel.base], maxValue);
+                const sampleToX = createSampleToXMapper(track, width, channel.values.length);
+                const polyline = buildPolyline(channel.values, width, height, baseColors[channel.base], maxValue, sampleToX);
                 if (polyline) {
                     svg.appendChild(polyline);
+                }
+            }
+
+            if (showPeakDebugOverlay && track.usesPeakLocations && Array.isArray(track.peakLocations)) {
+                for (let i = 0; i < track.peakLocations.length; i++) {
+                    const x = createSampleToXMapper(track, width, 0)(Number(track.peakLocations[i]));
+                    const marker = document.createElementNS(ns, "line");
+                    marker.setAttribute("x1", x.toFixed(2));
+                    marker.setAttribute("x2", x.toFixed(2));
+                    marker.setAttribute("y1", "0");
+                    marker.setAttribute("y2", String(height));
+                    marker.setAttribute("stroke", "#ff9800");
+                    marker.setAttribute("stroke-width", "1");
+                    marker.setAttribute("stroke-dasharray", "3 3");
+                    marker.setAttribute("opacity", "0.65");
+                    svg.appendChild(marker);
                 }
             }
 
@@ -503,7 +571,8 @@
         function buildReadBlock(track, totalWidth) {
             const orientation = track.wasReversed ? "R" : "F";
             const title = `${track.fileName} · read ${track.readId}`;
-            const meta = `${orientation} · ${track.start}-${track.end} · ${track.visibleLength} bp`;
+            const plocMeta = track.usesPeakLocations ? "PLOC" : "uniform trace fallback";
+            const meta = `${orientation} · ${track.start}-${track.end} · ${track.visibleLength} bp · ${plocMeta}`;
             const { block } = buildLaneBlock(title, meta);
 
             const sequenceLane = document.createElement("div");

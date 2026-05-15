@@ -95,11 +95,14 @@ namespace Web_prototype.Pages
                     : (read.Sequence ?? string.Empty).ToUpperInvariant();
 
                 var orientedTraces = OrientTraces(ParseTraceChannels(read.TraceDataJson), placement.WasReversed);
+                var rawPeakLocations = ParseIntArray(read.PeakLocationsJson);
+                var orientedPeakLocations = OrientPeakLocations(rawPeakLocations, orientedTraces.TraceLength, placement.WasReversed);
                 var visibleLength = Math.Max(0, placement.End - placement.Start);
 
                 var clipped = ClipVisibleData(
                     orientedSequence,
                     orientedTraces,
+                    orientedPeakLocations,
                     visibleLength,
                     placement.Start,
                     placement.End,
@@ -128,7 +131,9 @@ namespace Web_prototype.Pages
                         C = clipped.Traces.C,
                         G = clipped.Traces.G,
                         T = clipped.Traces.T
-                    }
+                    },
+                    PeakLocations = clipped.PeakLocations,
+                    UsesPeakLocations = clipped.UsesPeakLocations
                 });
             }
 
@@ -136,7 +141,7 @@ namespace Web_prototype.Pages
             {
                 ConsensusSequence = assembly.ConsensusSequence ?? string.Empty,
                 ConsensusLength = assembly.ConsensusLength,
-                ConsensusQualities = ParseQualityArray(assembly.QualityValuesJson),
+                ConsensusQualities = ParseIntArray(assembly.QualityValuesJson),
                 Tracks = tracks
             };
 
@@ -213,9 +218,22 @@ namespace Web_prototype.Pages
             };
         }
 
-        private static (string Sequence, TraceChannels Traces) ClipVisibleData(
+        private static int[] OrientPeakLocations(int[] peakLocations, int traceLength, bool wasReversed)
+        {
+            if (peakLocations == null || peakLocations.Length == 0)
+            {
+                return Array.Empty<int>();
+            }
+
+            return wasReversed
+                ? ChromatogramGeometry.ReversePeakLocations(peakLocations, traceLength)
+                : peakLocations;
+        }
+
+        private static (string Sequence, TraceChannels Traces, int[] PeakLocations, bool UsesPeakLocations) ClipVisibleData(
             string sequence,
             TraceChannels traces,
+            int[] peakLocations,
             int visibleLength,
             int start,
             int end,
@@ -224,13 +242,13 @@ namespace Web_prototype.Pages
             sequence ??= string.Empty;
             if (sequence.Length == 0)
             {
-                return (string.Empty, new TraceChannels());
+                return (string.Empty, new TraceChannels(), Array.Empty<int>(), false);
             }
 
             visibleLength = Math.Max(0, Math.Min(visibleLength, sequence.Length));
             if (visibleLength == 0)
             {
-                return (string.Empty, new TraceChannels());
+                return (string.Empty, new TraceChannels(), Array.Empty<int>(), false);
             }
 
             var leftClipBases = 0;
@@ -256,39 +274,67 @@ namespace Web_prototype.Pages
             var keepLength = sequence.Length - leftClipBases - rightClipBases;
             if (keepLength <= 0)
             {
-                return (string.Empty, new TraceChannels());
+                return (string.Empty, new TraceChannels(), Array.Empty<int>(), false);
             }
 
             var visibleSequence = sequence.Substring(leftClipBases, keepLength);
+
+            var traceLength = traces.TraceLength;
+            var rawBaseCount = CountNonGapBases(sequence, 0, sequence.Length);
+            var rawFromBase = CountNonGapBases(sequence, 0, leftClipBases);
+            var rawToBase = CountNonGapBases(sequence, 0, leftClipBases + keepLength);
+            var window = ChromatogramGeometry.SliceByPeakLocations(
+                peakLocations,
+                traceLength,
+                rawBaseCount,
+                rawFromBase,
+                rawToBase);
 
             return (
                 visibleSequence,
                 new TraceChannels
                 {
-                    A = SliceTraceByBases(traces.A, sequence.Length, leftClipBases, leftClipBases + keepLength),
-                    C = SliceTraceByBases(traces.C, sequence.Length, leftClipBases, leftClipBases + keepLength),
-                    G = SliceTraceByBases(traces.G, sequence.Length, leftClipBases, leftClipBases + keepLength),
-                    T = SliceTraceByBases(traces.T, sequence.Length, leftClipBases, leftClipBases + keepLength)
-                });
+                    A = SliceTraceBySamples(traces.A, window.StartSample, window.EndSample),
+                    C = SliceTraceBySamples(traces.C, window.StartSample, window.EndSample),
+                    G = SliceTraceBySamples(traces.G, window.StartSample, window.EndSample),
+                    T = SliceTraceBySamples(traces.T, window.StartSample, window.EndSample)
+                },
+                window.LocalPeakLocations,
+                window.UsesPeakLocations);
         }
 
-        private static int[] SliceTraceByBases(int[] values, int totalBases, int fromBaseInclusive, int toBaseExclusive)
+        private static int CountNonGapBases(string sequence, int start, int end)
         {
-            if (values == null || values.Length == 0 || totalBases <= 0)
+            if (string.IsNullOrEmpty(sequence))
+            {
+                return 0;
+            }
+
+            var safeStart = Math.Clamp(start, 0, sequence.Length);
+            var safeEnd = Math.Clamp(end, safeStart, sequence.Length);
+            var count = 0;
+
+            for (var i = safeStart; i < safeEnd; i++)
+            {
+                if (sequence[i] != '-' && sequence[i] != '.')
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private static int[] SliceTraceBySamples(int[] values, int startSampleInclusive, int endSampleExclusive)
+        {
+            if (values == null || values.Length == 0)
             {
                 return Array.Empty<int>();
             }
 
-            var safeFrom = Math.Clamp(fromBaseInclusive, 0, totalBases);
-            var safeTo = Math.Clamp(toBaseExclusive, safeFrom, totalBases);
-
-            var startIndex = (int)Math.Floor(values.Length * (safeFrom / (double)totalBases));
-            var endIndex = (int)Math.Ceiling(values.Length * (safeTo / (double)totalBases));
-
-            startIndex = Math.Clamp(startIndex, 0, values.Length);
-            endIndex = Math.Clamp(endIndex, startIndex, values.Length);
-
-            return values.Skip(startIndex).Take(endIndex - startIndex).ToArray();
+            var safeStart = Math.Clamp(startSampleInclusive, 0, values.Length);
+            var safeEnd = Math.Clamp(endSampleExclusive, safeStart, values.Length);
+            return values.Skip(safeStart).Take(safeEnd - safeStart).ToArray();
         }
 
         private static string ReverseComplement(string sequence)
@@ -341,7 +387,7 @@ namespace Web_prototype.Pages
             return result;
         }
 
-        private static int[] ParseQualityArray(string? json)
+        private static int[] ParseIntArray(string? json)
         {
             if (string.IsNullOrWhiteSpace(json))
             {
@@ -495,6 +541,8 @@ namespace Web_prototype.Pages
             public int LeftTrim { get; set; }
             public int RightTrim { get; set; }
             public ViewerTraceDto Traces { get; set; } = new();
+            public int[] PeakLocations { get; set; } = Array.Empty<int>();
+            public bool UsesPeakLocations { get; set; }
         }
 
         private sealed class ViewerTraceDto
@@ -521,6 +569,7 @@ namespace Web_prototype.Pages
             public int[] C { get; set; } = Array.Empty<int>();
             public int[] G { get; set; } = Array.Empty<int>();
             public int[] T { get; set; } = Array.Empty<int>();
+            public int TraceLength => new[] { A.Length, C.Length, G.Length, T.Length }.DefaultIfEmpty(0).Max();
         }
         public class SaveConsensusRequest
         {

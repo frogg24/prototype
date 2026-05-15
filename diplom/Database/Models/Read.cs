@@ -40,6 +40,7 @@ namespace Database.Models
         public string? BaseOrder { get; set; }
         public string? QualityValuesJson { get; set; }
         public string? TraceDataJson { get; set; }
+        public string? PeakLocationsJson { get; set; }
         public static Read? Create(ReadModel read)
         {
             if (read == null)
@@ -61,6 +62,7 @@ namespace Database.Models
                 BaseOrder = read.BaseOrder,
                 QualityValuesJson = read.QualityValuesJson,
                 TraceDataJson = read.TraceDataJson,
+                PeakLocationsJson = read.PeakLocationsJson,
             };
         }
 
@@ -82,6 +84,7 @@ namespace Database.Models
             BaseOrder = read.BaseOrder;
             QualityValuesJson = read.QualityValuesJson;
             TraceDataJson = read.TraceDataJson;
+            PeakLocationsJson = read.PeakLocationsJson;
         }
 
         public ReadModel GetViewModel => new()
@@ -99,6 +102,7 @@ namespace Database.Models
             BaseOrder = BaseOrder,
             QualityValuesJson = QualityValuesJson,
             TraceDataJson = TraceDataJson,
+            PeakLocationsJson = PeakLocationsJson,
         };
     }
 }

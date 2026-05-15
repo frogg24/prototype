@@ -32,6 +32,7 @@ namespace DataModels.ReadModels
         public ReadDirectionEnum Direction { get; set; } = ReadDirectionEnum.Unknown;
         public string? QualityValuesJson { get; set; }
         public string? TraceDataJson { get; set; }
+        public string? PeakLocationsJson { get; set; }
 
         //// Хранить ли сам исходный .ab1 в БД
         //public byte[]? RawFileContent { get; set; }

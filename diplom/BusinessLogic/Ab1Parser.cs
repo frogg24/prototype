@@ -35,6 +35,7 @@ namespace BusinessLogic
             var entries = ReadAllDirectoryEntries(buffer, rootEntry);
 
             var sequence = ExtractSequence(entries, buffer);
+            var peakLocations = ExtractPeakLocations(entries, buffer, sequence.Length);
 
             var qualityValues =
                 GetBytes(entries, buffer, "PCON", 2) ??
@@ -84,7 +85,8 @@ namespace BusinessLogic
                 BaseOrder = baseOrder,
                 SampleName = sampleName,
                 InstrumentModel = instrumentModel,
-                Traces = traces
+                Traces = traces,
+                PeakLocations = peakLocations
             };
         }
 
@@ -101,6 +103,36 @@ namespace BusinessLogic
 
             var data = ReadEntryData(buffer, entry);
             return Encoding.ASCII.GetString(data).TrimEnd('\0', ' ', '\r', '\n');
+        }
+
+        private static int[] ExtractPeakLocations(IReadOnlyList<Ab1DirectoryEntry> entries, byte[] buffer, int sequenceLength)
+        {
+            var entry =
+                FindEntry(entries, "PLOC", 2) ??
+                FindEntry(entries, "PLOC", 1);
+
+            if (entry is null)
+            {
+                return Array.Empty<int>();
+            }
+
+            var locations = GetIntegerArray(buffer, entry);
+            if (locations.Length == 0)
+            {
+                return Array.Empty<int>();
+            }
+
+            if (locations.Length == sequenceLength)
+            {
+                return locations;
+            }
+
+            if (locations.Length > sequenceLength && sequenceLength > 0)
+            {
+                return locations.Take(sequenceLength).ToArray();
+            }
+
+            return Array.Empty<int>();
         }
 
         private static List<Ab1DirectoryEntry> ReadAllDirectoryEntries(byte[] buffer, Ab1DirectoryEntry rootEntry)
@@ -190,6 +222,32 @@ namespace BusinessLogic
 
             return result;
         }
+        private static int[] GetIntegerArray(byte[] buffer, Ab1DirectoryEntry entry)
+        {
+            var bytes = ReadEntryData(buffer, entry);
+            var elementSize = entry.ElementSize > 0 ? entry.ElementSize : (ushort)(entry.ElementCount == 0 ? 0 : entry.DataSize / entry.ElementCount);
+
+            if (elementSize != 2 && elementSize != 4)
+            {
+                throw new InvalidDataException($"Тег {entry.TagName}{entry.TagNumber} содержит неподдерживаемый размер элемента {elementSize} для массива координат.");
+            }
+
+            if (bytes.Length % elementSize != 0)
+            {
+                throw new InvalidDataException($"Тег {entry.TagName}{entry.TagNumber} содержит некорректное число байт для числового массива.");
+            }
+
+            var result = new int[bytes.Length / elementSize];
+            for (var i = 0; i < result.Length; i++)
+            {
+                var offset = i * elementSize;
+                result[i] = elementSize == 2
+                    ? BinaryPrimitives.ReadUInt16BigEndian(bytes.AsSpan(offset, 2))
+                    : BinaryPrimitives.ReadInt32BigEndian(bytes.AsSpan(offset, 4));
+            }
+
+            return result;
+        }
 
         private static byte[] ReadEntryData(byte[] buffer, Ab1DirectoryEntry entry)
         {
@@ -251,6 +309,7 @@ namespace BusinessLogic
         public string? SampleName { get; init; }
         public string? InstrumentModel { get; init; }
         public IReadOnlyDictionary<string, short[]> Traces { get; init; } = new Dictionary<string, short[]>();
+        public IReadOnlyList<int> PeakLocations { get; init; } = Array.Empty<int>();
     }
     public sealed class Ab1DirectoryEntry
     {

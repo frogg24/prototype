@@ -61,7 +61,13 @@ namespace BusinessLogic
                         BaseOrder  =  parsed.BaseOrder,
                         QualityValuesJson = JsonSerializer.Serialize(parsed.QualityValues),
                         TraceDataJson = JsonSerializer.Serialize(parsed.Traces),
+                        PeakLocationsJson = parsed.PeakLocations.Count > 0 ? JsonSerializer.Serialize(parsed.PeakLocations) : null,
                     };
+
+                    if (parsed.PeakLocations.Count == 0)
+                    {
+                        _logger.LogWarning($"AB1 file has no valid PLOC coordinates; chromatogram viewer will fall back to legacy uniform trace scaling, fileName={file.FileName}");
+                    }
 
                     var created = await _readStorage.Insert(readModel);
                     if (created != null)

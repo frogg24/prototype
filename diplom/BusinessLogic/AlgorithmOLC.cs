@@ -331,6 +331,7 @@ namespace BusinessLogic
             }
 
             return new string(result);
+            //return new string(seq.Reverse().ToArray());
         }
 
         private List<int> ReverseQualities(List<int> qualities)
