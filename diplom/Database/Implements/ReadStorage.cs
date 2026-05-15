@@ -1,4 +1,5 @@
 ﻿using Database.Models;
+using DataModels.Interfaces;
 using DataModels.ReadModels;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -10,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Database.Implements
 {
-    public class ReadStorage
+    public class ReadStorage: IReadStorage
     {
         private readonly ILogger<ReadStorage> _logger;
 

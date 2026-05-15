@@ -1,4 +1,5 @@
 ﻿using Database.Models;
+using DataModels.Interfaces;
 using DataModels.ProjectModels;
 using DataModels.UserModels;
 using Microsoft.EntityFrameworkCore;
@@ -11,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace Database.Implements
 {
-    public class ProjectStorage
+    public class ProjectStorage: IProjectStorage
     {
         private readonly ILogger<ProjectStorage> _logger;
 

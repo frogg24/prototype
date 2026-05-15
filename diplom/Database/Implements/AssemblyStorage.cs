@@ -1,5 +1,6 @@
 ﻿using Database.Models;
 using DataModels.AssemblyModels;
+using DataModels.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
@@ -10,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Database.Implements
 {
-    public class AssemblyStorage
+    public class AssemblyStorage: IAssemblyStorage
     {
         private readonly ILogger<AssemblyStorage> _logger;
 

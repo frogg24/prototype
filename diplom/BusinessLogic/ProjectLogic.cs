@@ -1,4 +1,5 @@
 ﻿using Database.Implements;
+using DataModels.Interfaces;
 using DataModels.ProjectModels;
 using Microsoft.Extensions.Logging;
 using System;
@@ -12,10 +13,10 @@ namespace BusinessLogic
 {
     public class ProjectLogic
     {
-        private readonly ProjectStorage _projectStorage;
+        private readonly IProjectStorage _projectStorage;
         private readonly ILogger<ProjectLogic> _logger;
 
-        public ProjectLogic(ProjectStorage projectStorage, ILogger<ProjectLogic> logger)
+        public ProjectLogic(IProjectStorage projectStorage, ILogger<ProjectLogic> logger)
         {
             _projectStorage = projectStorage;
             _logger = logger;

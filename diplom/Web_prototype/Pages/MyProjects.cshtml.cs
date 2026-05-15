@@ -95,6 +95,36 @@ namespace Web_prototype.Pages
             }) ?? new List<ProjectModel>();
         }
 
+        public async Task<IActionResult> OnPostDeleteAsync(int projectId)
+        {
+            var userId = GetCurrentUserId();
+            if (userId <= 0)
+            {
+                return Challenge();
+            }
+
+            if (projectId <= 0)
+            {
+                ErrorMessage = "Invalid project id.";
+                await LoadProjectsAsync();
+                return Page();
+            }
+
+            var client = _httpClientFactory.CreateClient("ApiClient");
+            var response = await client.DeleteAsync($"api/project/{projectId}");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                ErrorMessage = "Failed to delete project.";
+                await LoadProjectsAsync();
+                return Page();
+            }
+
+            SuccessMessage = "Project deleted.";
+            await LoadProjectsAsync();
+            return Page();
+        }
+
         private int GetCurrentUserId()
         {
             var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
