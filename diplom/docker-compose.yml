@@ -1,0 +1,54 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: genome-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-Genom_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  api:
+    container_name: genome-api
+    build:
+      context: .
+      dockerfile: API/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=${POSTGRES_DB:-Genom_db};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "${API_PORT:-5027}:8080"
+    volumes:
+      - api_logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    container_name: genome-web
+    build:
+      context: .
+      dockerfile: Web_prototype/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      Api__BaseUrl: http://api:8080/
+    ports:
+      - "${WEB_PORT:-5202}:8080"
+    depends_on:
+      api:
+        condition: service_started
+
+volumes:
+  postgres_data:
+  api_logs:

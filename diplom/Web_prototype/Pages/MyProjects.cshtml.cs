@@ -41,7 +41,7 @@ namespace Web_prototype.Pages
 
             if (string.IsNullOrWhiteSpace(NewProjectTitle))
             {
-                ErrorMessage = "Введите название проекта.";
+            ErrorMessage = "Р’РІРµРґРёС‚Рµ РЅР°Р·РІР°РЅРёРµ РїСЂРѕРµРєС‚Р°.";
                 await LoadProjectsAsync();
                 return Page();
             }
@@ -60,12 +60,12 @@ namespace Web_prototype.Pages
 
             if (!response.IsSuccessStatusCode)
             {
-                ErrorMessage = "Не удалось создать проект.";
+                ErrorMessage = "РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ РїСЂРѕРµРєС‚.";
                 await LoadProjectsAsync();
                 return Page();
             }
 
-            SuccessMessage = "Проект создан.";
+            SuccessMessage = "РџСЂРѕРµРєС‚ СЃРѕР·РґР°РЅ.";
             NewProjectTitle = string.Empty;
             await LoadProjectsAsync();
             return Page();
@@ -84,7 +84,7 @@ namespace Web_prototype.Pages
             var response = await client.GetAsync($"api/project/user/{userId}");
             if (!response.IsSuccessStatusCode)
             {
-                ErrorMessage ??= "Не удалось загрузить список проектов.";
+                ErrorMessage ??= "РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ СЃРїРёСЃРѕРє РїСЂРѕРµРєС‚РѕРІ.";
                 return;
             }
 

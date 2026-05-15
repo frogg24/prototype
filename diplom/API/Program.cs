@@ -2,6 +2,7 @@ using API.Logging;
 using BusinessLogic;
 using Database.Implements;
 using DataModels.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using NLog;
 using NLog.Web;
 
@@ -11,6 +12,7 @@ var logger = LogManager.Setup()
 try
 {
     var builder = WebApplication.CreateBuilder(args);
+    global::Database.Database.ConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
     builder.Logging.ClearProviders();
     builder.Host.UseNLog();
@@ -53,6 +55,12 @@ try
     app.UseAuthorization();
 
     app.MapControllers();
+
+    using (var scope = app.Services.CreateScope())
+    {
+        await using var context = new global::Database.Database();
+        await context.Database.MigrateAsync();
+    }
 
     app.Run();
 }

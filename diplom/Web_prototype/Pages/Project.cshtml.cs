@@ -56,7 +56,7 @@ namespace Web_prototype.Pages
 
             if (UploadedFiles.Count == 0 || UploadedFiles.All(f => f.Length == 0))
             {
-                ErrorMessage = "Выберите хотя бы один .ab1 файл.";
+                ErrorMessage = "Р’С‹Р±РµСЂРёС‚Рµ С…РѕС‚СЏ Р±С‹ РѕРґРёРЅ .ab1 С„Р°Р№Р».";
                 await LoadProjectAsync();
                 await LoadReadsAsync();
                 return Page();
@@ -66,7 +66,7 @@ namespace Web_prototype.Pages
             {
                 if (!string.Equals(Path.GetExtension(uploadedFile.FileName), ".ab1", StringComparison.OrdinalIgnoreCase))
                 {
-                    ErrorMessage = "Поддерживаются только файлы .ab1.";
+                    ErrorMessage = "РџРѕРґРґРµСЂР¶РёРІР°СЋС‚СЃСЏ С‚РѕР»СЊРєРѕ С„Р°Р№Р»С‹ С„РѕСЂРјР°С‚Р° .ab1.";
                     await LoadProjectAsync();
                     await LoadReadsAsync();
                     return Page();
@@ -90,13 +90,13 @@ namespace Web_prototype.Pages
             var response = await client.PostAsync($"api/read/project/{Id}/upload", formData);
             if (!response.IsSuccessStatusCode)
             {
-                ErrorMessage = "Ошибка при загрузке ридов.";
+                ErrorMessage = "РћС€РёР±РєР° РїСЂРё Р·Р°РіСЂСѓР·РєРµ РїСЂРѕС‡С‚РµРЅРёР№.";
                 await LoadProjectAsync();
                 await LoadReadsAsync();
                 return Page();
             }
 
-            SuccessMessage = "Файлы успешно загружены.";
+            SuccessMessage = "Р¤Р°Р№Р»С‹ СѓСЃРїРµС€РЅРѕ Р·Р°РіСЂСѓР¶РµРЅС‹.";
             await LoadProjectAsync();
             await LoadReadsAsync();
             return Page();
@@ -109,7 +109,7 @@ namespace Web_prototype.Pages
 
             if (!response.IsSuccessStatusCode)
             {
-                ErrorMessage ??= "Проект не найден.";
+                ErrorMessage ??= "РџСЂРѕРµРєС‚ РЅРµ РЅР°Р№РґРµРЅ.";
                 return;
             }
 
@@ -126,7 +126,7 @@ namespace Web_prototype.Pages
             var response = await client.GetAsync($"api/read/project/{Id}");
             if (!response.IsSuccessStatusCode)
             {
-                ErrorMessage ??= "Не удалось загрузить риды проекта.";
+                ErrorMessage ??= "РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ СЂРёРґС‹ РїСЂРѕРµРєС‚Р°.";
                 return;
             }
 
@@ -152,7 +152,7 @@ namespace Web_prototype.Pages
             if (!response.IsSuccessStatusCode)
             {
                 var errorText = await response.Content.ReadAsStringAsync();
-                ErrorMessage = $"Ошибка при сборке: {errorText}";
+                ErrorMessage = $"РћС€РёР±РєР° РїСЂРё СЃР±РѕСЂРєРµ: {errorText}";
                 await LoadProjectAsync();
                 await LoadReadsAsync();
                 return Page();

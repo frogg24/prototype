@@ -60,11 +60,11 @@ namespace Web_prototype.Pages
 
             if (!response.IsSuccessStatusCode)
             {
-                ModelState.AddModelError(string.Empty, TryGetMessage(content) ?? "Ошибка регистрации");
+                ModelState.AddModelError(string.Empty, TryGetMessage(content) ?? "РћС€РёР±РєР° СЂРµРіРёСЃС‚СЂР°С†РёРё");
                 return Page();
             }
 
-            TempData["SuccessMessage"] = "Регистрация успешна. Теперь выполните вход.";
+            TempData["SuccessMessage"] = "Р РµРіРёСЃС‚СЂР°С†РёСЏ СѓСЃРїРµС€РЅР°, РІС‹РїРѕР»РЅРёС‚Рµ РІС…РѕРґ.";
             return RedirectToPage("/Login");
         }
 

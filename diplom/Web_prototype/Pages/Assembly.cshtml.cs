@@ -43,7 +43,7 @@ namespace Web_prototype.Pages
             var assemblyResponse = await client.GetAsync($"api/assembly/project/{ProjectId}");
             if (!assemblyResponse.IsSuccessStatusCode)
             {
-                ErrorMessage = "Не удалось загрузить сборку.";
+                ErrorMessage = "РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ СЃР±РѕСЂРєСѓ.";
                 return;
             }
 
@@ -56,14 +56,14 @@ namespace Web_prototype.Pages
 
             if (Assembly == null)
             {
-                ErrorMessage = "Сборка для проекта пока не найдена.";
+                ErrorMessage = "РЎР±РѕСЂРєР° РґР»СЏ РїСЂРѕРµРєС‚Р° РЅРµ РЅР°Р№РґРµРЅР°.";
                 return;
             }
 
             var readsResponse = await client.GetAsync($"api/read/project/{ProjectId}");
             if (!readsResponse.IsSuccessStatusCode)
             {
-                ErrorMessage = "Сборка загружена, но не удалось загрузить риды проекта.";
+                ErrorMessage = "РЎР±РѕСЂРєР° Р·Р°РіСЂСѓР¶РµРЅР°, РЅРѕ РЅРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ СЂРёРґС‹ РїСЂРѕРµРєС‚Р°.";
                 return;
             }
 
@@ -408,17 +408,17 @@ namespace Web_prototype.Pages
         {
             if (request == null)
             {
-                return BadRequest(new { message = "Пустой запрос" });
+                return BadRequest(new { message = "РџСѓСЃС‚РѕР№ Р·Р°РїСЂРѕСЃ" });
             }
 
             if (request.AssemblyId <= 0)
             {
-                return BadRequest(new { message = "Некорректный assemblyId" });
+                return BadRequest(new { message = "РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ assemblyId" });
             }
 
             if (string.IsNullOrWhiteSpace(request.ConsensusSequence))
             {
-                return BadRequest(new { message = "Пустая consensus sequence" });
+                return BadRequest(new { message = "РџСѓСЃС‚Р°СЏ consensus sequence" });
             }
 
             var normalized = request.ConsensusSequence.Trim().ToUpperInvariant();
@@ -427,7 +427,7 @@ namespace Web_prototype.Pages
             {
                 if (!"ACGTNRYSWKMBDHV".Contains(ch))
                 {
-                    return BadRequest(new { message = $"Недопустимый символ: {ch}" });
+                    return BadRequest(new { message = $"РќРµРґРѕРїСѓСЃС‚РёРјС‹Р№ СЃРёРјРІРѕР»: {ch}" });
                 }
             }
 
@@ -453,7 +453,7 @@ namespace Web_prototype.Pages
             {
                 return StatusCode((int)response.StatusCode, new
                 {
-                    message = string.IsNullOrWhiteSpace(responseBody) ? "Ошибка при сохранении" : responseBody
+                    message = string.IsNullOrWhiteSpace(responseBody) ? "РћС€РёР±РєР° РїСЂРё СЃРѕС…СЂР°РЅРµРЅРёРё" : responseBody
                 });
             }
 
