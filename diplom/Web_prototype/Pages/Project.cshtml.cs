@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Net.Http.Headers;
+using System.Security.Claims;
 using System.Text.Json;
 
 namespace Web_prototype.Pages
@@ -32,7 +33,13 @@ namespace Web_prototype.Pages
         public async Task<IActionResult> OnGetAsync(int id)
         {
             Id = id;
-            await LoadProjectAsync();
+
+            var accessResult = await EnsureProjectAccessAsync();
+            if (accessResult != null)
+            {
+                return accessResult;
+            }
+
             await LoadReadsAsync();
             return Page();
         }
@@ -40,6 +47,12 @@ namespace Web_prototype.Pages
         public async Task<IActionResult> OnPostUploadAsync(int id)
         {
             Id = id;
+
+            var accessResult = await EnsureProjectAccessAsync();
+            if (accessResult != null)
+            {
+                return accessResult;
+            }
 
             if (UploadedFiles.Count == 0 || UploadedFiles.All(f => f.Length == 0))
             {
@@ -127,6 +140,11 @@ namespace Web_prototype.Pages
         public async Task<IActionResult> OnPostAssembleAsync(int id)
         {
             Id = id;
+            var accessResult = await EnsureProjectAccessAsync();
+            if (accessResult != null)
+            {
+                return accessResult;
+            }
 
             var client = _httpClientFactory.CreateClient("ApiClient");
             var response = await client.PostAsync($"api/assembly/project/{Id}/run", null);
@@ -146,6 +164,18 @@ namespace Web_prototype.Pages
         public async Task<IActionResult> OnPostDeleteReadAsync(int id, int readId)
         {
             Id = id;
+            var accessResult = await EnsureProjectAccessAsync();
+            if (accessResult != null)
+            {
+                return accessResult;
+            }
+
+            await LoadReadsAsync();
+
+            if (!Reads.Any(read => read.Id == readId))
+            {
+                return Forbid();
+            }
 
             var client = _httpClientFactory.CreateClient("ApiClient");
             var response = await client.DeleteAsync($"api/read/{readId}");
@@ -162,6 +192,34 @@ namespace Web_prototype.Pages
             await LoadProjectAsync();
             await LoadReadsAsync();
             return Page();
+        }
+        private int GetCurrentUserId()
+        {
+            var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return int.TryParse(claim, out var userId) ? userId : -1;
+        }
+
+        private async Task<IActionResult?> EnsureProjectAccessAsync()
+        {
+            var currentUserId = GetCurrentUserId();
+
+            if (currentUserId <= 0)
+            {
+                return Challenge();
+            }
+
+            await LoadProjectAsync();
+
+            if (Project == null)
+            {
+                return NotFound();
+            }
+
+            if (Project.UserId != currentUserId)
+            {
+                return Forbid();
+            }
+            return null;
         }
     }
 }
